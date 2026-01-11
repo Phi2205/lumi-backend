@@ -25,7 +25,18 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email);
+    
+    return {
+      ...tokens,
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        bio: user.bio,
+      },
+    };
   }
 
   // 🔐 LOGIN
@@ -39,7 +50,19 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.password_hash);
     if (!ok) throw new UnauthorizedException();
 
-    return this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email);
+    
+    return {
+      success: true,
+      ...tokens,
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        bio: user.bio,
+      },
+    };
   }
 
   // 🔁 REFRESH TOKEN
@@ -49,7 +72,24 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
 
-      return this.generateTokens(payload.sub, payload.email);
+      const user = await this.prisma.users.findUnique({
+        where: { id: BigInt(payload.sub) },
+      });
+
+      if (!user) throw new UnauthorizedException();
+
+      const tokens = await this.generateTokens(user.id, user.email);
+      
+      return {
+        ...tokens,
+        user: {
+          id: user.id.toString(),
+          email: user.email,
+          username: user.username,
+          avatar_url: user.avatar_url,
+          bio: user.bio,
+        },
+      };
     } catch {
       throw new UnauthorizedException();
     }
@@ -72,6 +112,24 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
+    };
+  }
+
+  // 👤 LẤY THÔNG TIN USER HIỆN TẠI
+  async getMe(userId: string) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: BigInt(userId) },
+    });
+
+    if (!user) throw new UnauthorizedException();
+
+    return {
+      id: user.id.toString(),
+      email: user.email,
+      username: user.username,
+      avatar_url: user.avatar_url,
+      bio: user.bio,
+      created_at: user.created_at,
     };
   }
 
