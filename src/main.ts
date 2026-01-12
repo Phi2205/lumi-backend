@@ -46,10 +46,26 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management endpoints')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .addCookieAuth('accessToken', {
-      type: 'http',
+      type: 'apiKey',
       in: 'cookie',
-      scheme: 'bearer',
+      name: 'accessToken',
+    })
+    .addCookieAuth('refreshToken', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'refreshToken',
     })
     .build();
   
@@ -57,6 +73,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
+      withCredentials: true,
     },
   });
 
