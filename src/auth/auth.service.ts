@@ -55,10 +55,14 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    if (!user) throw new UnauthorizedException();
+    if (!user) {
+      throw new UnauthorizedException('Email not found');
+    }
 
     const ok = await bcrypt.compare(dto.password, user.password_hash);
-    if (!ok) throw new UnauthorizedException();
+    if (!ok) {
+      throw new UnauthorizedException('Invalid password');
+    }
 
     const tokens = await this.generateTokens(user.id, user.email);
     
