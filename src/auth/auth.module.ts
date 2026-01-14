@@ -5,10 +5,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { RefreshJwtStrategy } from './refresh.strategy';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { RedisModule } from 'src/redis/redis.module';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [
     PrismaModule,
+    RedisModule,
+    EmailModule,
     JwtModule.register({
       secret: (process.env.JWT_SECRET || 'dev-secret') as string,
       signOptions: {
