@@ -142,6 +142,7 @@ model users {
   avatar_url                                  String?
   bio                                         String?
   created_at                                  DateTime?       @default(now()) @db.Timestamp(6)
+  name                                        String          @db.VarChar(100)
   comments                                    comments[]
   conversations_conversations_user1_idTousers conversations[] @relation("conversations_user1_idTousers")
   conversations_conversations_user2_idTousers conversations[] @relation("conversations_user2_idTousers")

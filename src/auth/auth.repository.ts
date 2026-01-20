@@ -24,17 +24,28 @@ export class AuthRepository {
   }
 
   /**
+   * Tìm user theo username
+   */
+  async findByUsername(username: string) {
+    return this.prisma.users.findUnique({
+      where: { username },
+    });
+  }
+
+  /**
    * Tạo user mới
    */
   async createUser(data: {
     email: string;
     username: string;
+    name: string;
     password_hash: string;
   }) {
     return this.prisma.users.create({
       data: {
         email: data.email,
         username: data.username,
+        name: data.name,
         password_hash: data.password_hash,
       },
     });

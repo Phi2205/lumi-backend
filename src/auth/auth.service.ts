@@ -20,6 +20,28 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
+  // Tạo username từ name và đảm bảo unique
+  private async generateUniqueUsername(name: string): Promise<string> {
+    const base = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '.')
+      .replace(/[^a-z0-9.]/g, '');
+
+    let username = base || 'user';
+    let counter = 1;
+
+    // Nếu đã tồn tại thì thêm .2, .3, ...
+    while (await this.authRepository.findByUsername(username)) {
+      counter += 1;
+      username = `${base || 'user'}.${counter}`;
+    }
+
+    return username;
+  }
+
   // 🔐 REGISTER
   async register(dto: RegisterDto) {
     // Check if email already exists
@@ -40,7 +62,7 @@ export class AuthService {
     const registerDataKey = `register:${dto.email}`;
     const registerData = JSON.stringify({
       email: dto.email,
-      username: dto.username,
+      name: dto.name,
       password: dto.password,
     });
     await this.redisService.set(registerDataKey, registerData, 300);
@@ -181,9 +203,12 @@ export class AuthService {
     // Hash password and create user
     const hashed = await bcrypt.hash(registerData.password, 10);
 
+    const username = await this.generateUniqueUsername(registerData.name);
+
     const user = await this.authRepository.createUser({
       email: registerData.email,
-      username: registerData.username,
+      name: registerData.name,
+      username,
       password_hash: hashed,
     });
 
