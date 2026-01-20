@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { StoriesModule } from './stories/stories.module';
+import { CloudinaryModule } from './config/cloudinary.module';
 
 @Module({
   imports: [
@@ -15,8 +17,10 @@ import { UsersModule } from './users/users.module';
     }),
     PrismaModule,
     RedisModule,
+    CloudinaryModule,
     AuthModule,
     UsersModule,
+    StoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
