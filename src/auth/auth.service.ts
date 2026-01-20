@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { AuthRepository } from './auth.repository';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -14,7 +14,7 @@ import { BadRequestException } from '@nestjs/common';
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    private authRepository: AuthRepository,
     private jwtService: JwtService,
     private redisService: RedisService,
     private emailService: EmailService,
@@ -23,9 +23,7 @@ export class AuthService {
   // 🔐 REGISTER
   async register(dto: RegisterDto) {
     // Check if email already exists
-    const existingUser = await this.prisma.users.findUnique({
-      where: { email: dto.email },
-    });
+    const existingUser = await this.authRepository.findByEmail(dto.email);
 
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -58,9 +56,7 @@ export class AuthService {
 
   // 🔐 LOGIN
   async login(dto: LoginDto) {
-    const user = await this.prisma.users.findUnique({
-      where: { email: dto.email },
-    });
+    const user = await this.authRepository.findByEmail(dto.email);
 
     if (!user) {
       throw new UnauthorizedException('Email not found');
@@ -93,9 +89,7 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
 
-      const user = await this.prisma.users.findUnique({
-        where: { id: BigInt(payload.sub) },
-      });
+      const user = await this.authRepository.findById(payload.sub);
 
       if (!user) throw new UnauthorizedException();
 
@@ -138,9 +132,7 @@ export class AuthService {
 
   // 👤 LẤY THÔNG TIN USER HIỆN TẠI
   async getMe(userId: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { id: BigInt(userId) },
-    });
+    const user = await this.authRepository.findById(userId);
 
     if (!user) throw new UnauthorizedException();
 
@@ -180,9 +172,7 @@ export class AuthService {
     const registerData = JSON.parse(registerDataStr);
 
     // Check if email already exists (double check)
-    const existingUser = await this.prisma.users.findUnique({
-      where: { email: dto.email },
-    });
+    const existingUser = await this.authRepository.findByEmail(dto.email);
 
     if (existingUser) {
       throw new ConflictException('Email is already registered');
@@ -191,12 +181,10 @@ export class AuthService {
     // Hash password and create user
     const hashed = await bcrypt.hash(registerData.password, 10);
 
-    const user = await this.prisma.users.create({
-      data: {
-        email: registerData.email,
-        username: registerData.username,
-        password_hash: hashed,
-      },
+    const user = await this.authRepository.createUser({
+      email: registerData.email,
+      username: registerData.username,
+      password_hash: hashed,
     });
 
     // Delete OTP and registration data from Redis

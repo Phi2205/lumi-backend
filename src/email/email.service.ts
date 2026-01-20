@@ -36,7 +36,8 @@ export class EmailService {
   async sendOTP(email: string, otp: string): Promise<void> {
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPass = this.configService.get<string>('SMTP_PASS');
-
+    console.log(smtpUser, smtpPass);
+    console.log("from: ", this.configService.get<string>('SMTP_FROM'));
     if (!smtpUser || !smtpPass) {
       throw new Error('SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file');
     }

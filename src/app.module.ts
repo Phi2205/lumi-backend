@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { StoriesModule } from './stories/stories.module';
 import { CloudinaryModule } from './config/cloudinary.module';
+import { FriendRequestsModule } from './friend-requests/friend-requests.module';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { CloudinaryModule } from './config/cloudinary.module';
     AuthModule,
     UsersModule,
     StoriesModule,
+    FriendRequestsModule,
+    FriendsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
