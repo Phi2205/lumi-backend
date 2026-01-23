@@ -42,5 +42,20 @@ export class UsersRepository {
 
     return { data, total };
   }
+
+  async findByUsername(username: string) {
+    return this.prisma.users.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        bio: true,
+        created_at: true,
+      },
+    });
+  }
 }
 
