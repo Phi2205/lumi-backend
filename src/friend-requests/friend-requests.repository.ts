@@ -105,4 +105,47 @@ export class FriendRequestsRepository {
     });
   }
 
+  /**
+   * Lấy danh sách lời mời kết bạn theo receiver_id với phân trang
+   */
+  async getFriendRequestsByReceiver(
+    receiverId: bigint | string,
+    limit?: number,
+    offset?: number,
+  ) {
+    const [data, total] = await Promise.all([
+      this.prisma.friend_requests.findMany({
+        where: {
+          receiver_id: BigInt(receiverId),
+          status: FriendRequestStatus.pending,
+        },
+        include: {
+          requester: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              email: true,
+              avatar_url: true,
+              bio: true,
+            },
+          },
+        },
+        skip: offset,
+        take: limit,
+        orderBy: {
+          created_at: 'desc',
+        },
+      }),
+      this.prisma.friend_requests.count({
+        where: {
+          receiver_id: BigInt(receiverId),
+          status: FriendRequestStatus.pending,
+        },
+      }),
+    ]);
+
+    return { data, total };
+  }
+
 }

@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { FriendRequestStatus } from '@prisma/client';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
 import { RespondFriendRequestDto } from './dto/respond-friend-request.dto';
+import { parsePaginationParams, createPaginationResponse } from 'src/utils/pagination';
 
 @Injectable()
 export class FriendRequestsService {
@@ -13,6 +14,51 @@ export class FriendRequestsService {
     private friendsRepository: FriendsRepository,
     private prisma: PrismaService,
   ) {}
+
+  /**
+   * Lấy danh sách lời mời kết bạn đã nhận với phân trang
+   */
+  async getFriendRequestsByReceiver(
+    receiverId: string,
+    page?: string | number,
+    limit?: string | number,
+  ) {
+    const { page: pageNumber, limit: limitNumber, offset } = parsePaginationParams(page, limit);
+
+    const { data, total } = await this.friendRequestsRepository.getFriendRequestsByReceiver(
+      receiverId,
+      limitNumber,
+      offset,
+    );
+
+    // Serialize data: convert BigInt to string và format response
+    const serializedData = data.map((request) => ({
+      requester_id: request.requester_id.toString(),
+      receiver_id: request.receiver_id.toString(),
+      status: request.status,
+      created_at: request.created_at,
+      responded_at: request.responded_at,
+      requester: {
+        id: request.requester.id.toString(),
+        name: request.requester.name,
+        username: request.requester.username,
+        email: request.requester.email,
+        avatar_url: request.requester.avatar_url,
+        bio: request.requester.bio,
+      },
+    }));
+
+    const paginated = createPaginationResponse(serializedData, pageNumber, limitNumber, total);
+
+    return {
+      success: true,
+      message: 'Friend requests fetched successfully',
+      data: {
+        items: paginated.data,
+        pagination: paginated.pagination,
+      },
+    };
+  }
 
   /**
    * Gửi lời mời kết bạn

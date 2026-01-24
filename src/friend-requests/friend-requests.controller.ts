@@ -1,4 +1,4 @@
-import { Controller, Post, Put, Delete, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards, Request, Patch } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FriendRequestsService } from './friend-requests.service';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
@@ -8,6 +8,20 @@ import { RespondFriendRequestDto } from './dto/respond-friend-request.dto';
 @UseGuards(AuthGuard('jwt'))
 export class FriendRequestsController {
   constructor(private friendRequestsService: FriendRequestsService) {}
+
+  /**
+   * Lấy danh sách lời mời kết bạn đã nhận
+   * GET /friend-requests?page=1&limit=20
+   */
+  @Get()
+  async getFriendRequests(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const receiverId = req.user.userId; // Lấy từ JWT token
+    return this.friendRequestsService.getFriendRequestsByReceiver(receiverId, page, limit);
+  }
 
   /**
    * Gửi lời mời kết bạn
@@ -25,7 +39,7 @@ export class FriendRequestsController {
    * PENDING → accept → FRIEND
    * PUT /friend-requests/accept
    */
-  @Put('accept')
+  @Patch('accept')
   async acceptFriendRequest(@Request() req: any, @Body() dto: RespondFriendRequestDto) {
     const receiverId = req.user.userId;
     return this.friendRequestsService.acceptFriendRequest(receiverId, dto);
@@ -36,7 +50,7 @@ export class FriendRequestsController {
    * PENDING → reject → REJECTED
    * PUT /friend-requests/reject
    */
-  @Put('reject')
+  @Patch('reject')
   async rejectFriendRequest(@Request() req: any, @Body() dto: RespondFriendRequestDto) {
     const receiverId = req.user.userId;
     return this.friendRequestsService.rejectFriendRequest(receiverId, dto);
