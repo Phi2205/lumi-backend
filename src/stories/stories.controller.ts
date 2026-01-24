@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Param,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -66,7 +67,7 @@ export class StoriesController {
     // Determine media type from mimetype
     const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
 
-    return this.storiesService.createStory(req.user.userId, file.url, mediaType);
+    return this.storiesService.createStory(req.user.userId, file.public_id, mediaType);
   }
 
   @ApiOperation({ summary: 'Get all stories of current user' })
@@ -91,6 +92,104 @@ export class StoriesController {
   @Get('me')
   async getMyStories(@Req() req: any) {
     return this.storiesService.getUserStories(req.user.userId);
+  }
+
+  @ApiOperation({ summary: 'Get friends with active stories (Stories Ring) with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of friends who have active stories',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  user_id: { type: 'string' },
+                  user_name: { type: 'string' },
+                  username: { type: 'string' },
+                  user_avatar: { type: 'string', nullable: true },
+                  story_count: { type: 'number' },
+                  latest_story_time: { type: 'string', format: 'date-time', nullable: true },
+                },
+              },
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'number' },
+                limit: { type: 'number' },
+                total: { type: 'number' },
+                totalPages: { type: 'number' },
+                hasNextPage: { type: 'boolean' },
+                hasPreviousPage: { type: 'boolean' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @Get('feed')
+  async getFriendsWithStories(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.storiesService.getFriendsWithStories(req.user.userId, page, limit);
+  }
+
+  @ApiOperation({ summary: 'Get stories of a specific user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stories of the user',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                username: { type: 'string' },
+                avatar_url: { type: 'string', nullable: true },
+              },
+            },
+            stories: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  media_url: { type: 'string' },
+                  media_type: { type: 'string' },
+                  streaming_url: { type: 'string', nullable: true },
+                  created_at: { type: 'string', format: 'date-time' },
+                  expires_at: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Not friends with this user' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @Get('user/:userId')
+  async getUserStories(@Param('userId') userId: string, @Req() req: any) {
+    return this.storiesService.getUserStoriesForViewer(userId, req.user.userId);
   }
 
   @ApiOperation({ summary: 'Delete a story' })
