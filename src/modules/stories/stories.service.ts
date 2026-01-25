@@ -124,6 +124,7 @@ export class StoriesService {
             },
             select: {
               created_at: true,
+              media_url: true,
             },
           }),
           this.prisma.stories.count({
@@ -148,6 +149,7 @@ export class StoriesService {
           avatar_url: friendship.friend.avatar_url,
           story_count: storyCount,
           latest_story_time: latestStory?.created_at || null,
+          latest_story_media_url: latestStory?.media_url || null,
         };
       }),
     );
