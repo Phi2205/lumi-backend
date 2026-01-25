@@ -107,6 +107,14 @@ export class AuthService {
   // 🔁 REFRESH TOKEN
   async refresh(refreshToken: string) {
     try {
+      // Check if refresh token is blacklisted
+      const isBlacklisted = await this.redisService.get(
+        `blacklist:refresh:${refreshToken}`,
+      );
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Refresh token has been revoked');
+      }
+
       const payload = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
@@ -134,7 +142,14 @@ export class AuthService {
 
   // 🎯 TẠO TOKEN
   private async generateTokens(userId: bigint | number | string, email: string) {
-    const payload = { sub: userId.toString(), email };
+    // Lấy user để có role
+    const user = await this.authRepository.findById(userId);
+    
+    const payload = { 
+      sub: userId.toString(), 
+      email,
+      role: (user as any)?.role || 'user' // Include role trong JWT payload
+    };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET as string,
@@ -258,9 +273,71 @@ export class AuthService {
     };
   }
 
-  // 🔓 LOGOUT (placeholder)
-  async logout(userId: number) {
-    // implement token revocation / cleanup if you store refresh tokens
-    return { ok: true };
+  // 🔓 LOGOUT
+  async logout(
+    userId: bigint | number | string,
+    accessToken?: string,
+    refreshToken?: string,
+  ) {
+    // 1. Validate user exists
+    const user = await this.authRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // 2. Blacklist access token
+    if (accessToken) {
+      try {
+        const decoded = this.jwtService.decode(accessToken) as any;
+        if (decoded?.exp) {
+          const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+          if (expiresIn > 0) {
+            await this.redisService.set(
+              `blacklist:access:${accessToken}`,
+              'true',
+              expiresIn,
+            );
+          }
+        }
+      } catch (error) {
+        // Ignore invalid token
+      }
+    }
+
+    // 3. Blacklist refresh token
+    if (refreshToken) {
+      try {
+        const decoded = this.jwtService.decode(refreshToken) as any;
+        if (decoded?.exp) {
+          const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+          if (expiresIn > 0) {
+            await this.redisService.set(
+              `blacklist:refresh:${refreshToken}`,
+              'true',
+              expiresIn,
+            );
+          }
+        }
+      } catch (error) {
+        // Ignore invalid token
+      }
+    }
+
+    // 4. Xóa refresh tokens của user (nếu có lưu)
+    const userRefreshTokensKey = `user:${userId}:refresh_tokens`;
+    await this.redisService.del(userRefreshTokensKey);
+
+    // 5. Logout timestamp (optional - for tracking)
+    await this.redisService.set(
+      `user:${userId}:last_logout`,
+      Date.now().toString(),
+      7 * 24 * 60 * 60, // 7 days
+    );
+
+    // 6. Return success
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
   }
 }

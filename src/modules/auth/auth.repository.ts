@@ -17,7 +17,7 @@ export class AuthRepository {
   /**
    * Tìm user theo id
    */
-  async findById(id: bigint | string) {
+  async findById(id: bigint | string | number) {
     return this.prisma.users.findUnique({
       where: { id: BigInt(id) },
     });

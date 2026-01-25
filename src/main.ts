@@ -19,6 +19,7 @@ try {
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -38,6 +39,9 @@ async function bootstrap() {
       transform: true, // auto convert type
     }),
   );
+
+  // Global interceptor để đo thời gian request
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // Swagger API Documentation
   const config = new DocumentBuilder()

@@ -190,20 +190,21 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Logout user' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        userId: { type: 'number', example: 1 },
-      },
-    },
-  })
   @ApiResponse({ status: 200, description: 'Logout successful' })
+  @UseGuards(AuthGuard('jwt'))
   @Post('logout')
-  logout(@Body('userId') userId: number, @Res({ passthrough: true }) res: Response) {
+  logout(@Req() req, @Res({ passthrough: true }) res: Response) {
+    // Get tokens from cookies or headers
+    const accessToken =
+      req.cookies?.accessToken ||
+      req.headers.authorization?.replace('Bearer ', '');
+    const refreshToken = req.cookies?.refreshToken;
+
     // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    return this.auth.logout(userId);
+
+    // Call service với tokens để blacklist
+    return this.auth.logout(req.user.userId, accessToken, refreshToken);
   }
 }
