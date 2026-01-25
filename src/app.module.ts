@@ -4,12 +4,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { StoriesModule } from './stories/stories.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { StoriesModule } from './modules/stories/stories.module';
 import { CloudinaryModule } from './config/cloudinary.module';
-import { FriendRequestsModule } from './friend-requests/friend-requests.module';
-import { FriendsModule } from './friends/friends.module';
+import { FriendRequestsModule } from './modules/friend-requests/friend-requests.module';
+import { FriendsModule } from './modules/friends/friends.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { FriendsModule } from './friends/friends.module';
     PrismaModule,
     RedisModule,
     CloudinaryModule,
+    CommonModule,
     AuthModule,
     UsersModule,
     StoriesModule,

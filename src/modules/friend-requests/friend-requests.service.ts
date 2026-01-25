@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { FriendRequestsRepository } from './friend-requests.repository';
-import { FriendsRepository } from 'src/friends/friends.repository';
+import { FriendsRepository } from '../friends/friends.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FriendRequestStatus } from '@prisma/client';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
