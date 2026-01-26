@@ -125,6 +125,7 @@ export class StoriesService {
             select: {
               created_at: true,
               media_url: true,
+              media_type: true,
             },
           }),
           this.prisma.stories.count({
@@ -150,6 +151,7 @@ export class StoriesService {
           story_count: storyCount,
           latest_story_time: latestStory?.created_at || null,
           latest_story_media_url: latestStory?.media_url || null,
+          latest_story_media_type: latestStory?.media_type || null,
         };
       }),
     );
