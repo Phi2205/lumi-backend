@@ -97,6 +97,7 @@ export class AuthService {
       user: {
         id: user.id.toString(),
         email: user.email,
+        name: user.name,
         username: user.username,
         avatar_url: user.avatar_url,
         bio: user.bio,
