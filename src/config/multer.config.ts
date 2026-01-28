@@ -18,5 +18,22 @@ const storage = new CloudinaryStorage({
   },
 });
 
+const postStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video');
+
+    return {
+      folder: 'posts',
+      resource_type: isVideo ? 'video' : 'image',
+      allowed_formats: isVideo
+        ? ['mp4', 'webm']
+        : ['jpg', 'png', 'jpeg', 'webp'],
+      public_id: `${Date.now()}-${file.originalname}`,
+    };
+  },
+});
+
 export const upload = multer({ storage });
 export { storage as cloudinaryStorage };
+export { postStorage as cloudinaryPostStorage };

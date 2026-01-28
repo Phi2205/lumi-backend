@@ -11,6 +11,7 @@ import { CloudinaryModule } from './config/cloudinary.module';
 import { FriendRequestsModule } from './modules/friend-requests/friend-requests.module';
 import { FriendsModule } from './modules/friends/friends.module';
 import { CommonModule } from './common/common.module';
+import { PostsModule } from './modules/posts/posts.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CommonModule } from './common/common.module';
     AuthModule,
     UsersModule,
     StoriesModule,
+    PostsModule,
     FriendRequestsModule,
     FriendsModule,
   ],
