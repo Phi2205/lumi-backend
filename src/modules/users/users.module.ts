@@ -5,10 +5,11 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { UsersRepository } from './users.repository';
 import { FriendRequestsRepository } from '../friend-requests/friend-requests.repository';
 import { FriendsRepository } from '../friends/friends.repository';
+import { RecommendModule } from '../recommend/recommend.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, RecommendModule],
   controllers: [UsersController],
   providers: [UsersService, UsersRepository, FriendRequestsRepository, FriendsRepository],
 })
-export class UsersModule {}
+export class UsersModule { }

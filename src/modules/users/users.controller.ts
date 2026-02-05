@@ -24,6 +24,8 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   async getByUsername(@Param('username') username: string, @Request() req: any) {
     const currentUserId = req.user?.userId;
-    return this.usersService.findByUsername(username, currentUserId);
+    const token = req.cookies?.accessToken || 
+                req.headers.authorization?.replace('Bearer ', '');
+    return this.usersService.findByUsername(username, currentUserId, token);
   }
 }

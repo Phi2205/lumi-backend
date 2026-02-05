@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { UsersRepository } from './users.repository';
 import { FriendRequestsRepository } from '../friend-requests/friend-requests.repository';
 import { FriendsRepository } from '../friends/friends.repository';
+import { RecommendService } from '../recommend/recommend.service';
+
 
 @Injectable()
 export class UsersService {
@@ -9,7 +11,8 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly friendRequestsRepository: FriendRequestsRepository,
     private readonly friendsRepository: FriendsRepository,
-  ) {}
+    private readonly recommendService: RecommendService,
+  ) { }
 
   // Tìm kiếm user theo name (chứa chuỗi, không phân biệt hoa/thường)
   async findByName(
@@ -45,7 +48,7 @@ export class UsersService {
   }
 
   // Lấy user theo username (unique) với response chuẩn success/message/data
-  async findByUsername(username: string, currentUserId?: string) {
+  async findByUsername(username: string, currentUserId?: string, token?: string) {
     const user = await this.usersRepository.findByUsername(username);
     if (!user) {
       return {
@@ -94,7 +97,24 @@ export class UsersService {
         }
       }
     }
-
+    // console.log('Logging event to Recommend service:', {
+    //   actor_user_id: currentUserId,
+    //   target_user_id: user.id.toString(),
+    //   event_type: 'view_profile',
+    // });
+    if (currentUserId && currentUserId !== user.id.toString()) {
+      this.recommendService
+        .logEvent({
+          actor_user_id: currentUserId,
+          target_user_id: user.id.toString(),
+          event_type: 'view_profile',
+          timestamp: new Date().toISOString(),
+          session_id: token,
+        })
+        .catch(err => {
+          console.error('[Recommend] logEvent failed', err);
+        });
+    }
     return {
       success: true,
       message: 'User fetched successfully',
