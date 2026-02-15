@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -51,6 +51,48 @@ export class PostsController {
       content: dto.content ?? null,
       media,
     });
+  }
+
+  @Post(':id/like')
+  @ApiOperation({ summary: 'Toggle like a post' })
+  @ApiResponse({ status: 200, description: 'Post liked/unliked successfully' })
+  async toggleLike(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.postsService.toggleLike(id, userId);
+  }
+  @Post('seen')
+  @ApiOperation({ summary: 'Mark multiple posts as seen' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        postIds: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description: 'List of post IDs to mark as seen',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Posts marked as seen' })
+  async markAsSeen(@Body('postIds') postIds: string[], @Req() req: any) {
+    const userId = req.user.userId;
+    await this.postsService.markPostsAsSeen(postIds, userId);
+    return { success: true, message: 'Posts marked as seen' };
+  }
+
+  @Get('unseen')
+  @ApiOperation({ summary: 'Get unseen posts' })
+  @ApiResponse({ status: 200, description: 'List of unseen posts' })
+  async getUnseenPosts(
+    @Req() req: any,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.postsService.getUnseenPosts(userId, page, limit);
   }
 }
 
