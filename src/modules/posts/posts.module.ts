@@ -1,17 +1,30 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
-import { PostsController } from './posts.controller';
-import { PostsService } from './posts.service';
-import { PostsRepository } from './posts.repository';
-import { PostMediaRepository } from '../post-media/post-media.repository';
 import { FriendsModule } from '../friends/friends.module';
+import { PostsController } from './controllers/posts.controller';
+import { PostService } from './services/post.service';
+import { PostRepository } from './repositories/post.repository';
+import { PostMediaRepository } from './repositories/post-media.repository';
+import { PostMediaService } from './services/post-media.service';
+import { PostLikeRepository } from './repositories/post-like.repository';
+import { PostLikeService } from './services/post-like.service';
+import { PostCommentRepository } from './repositories/post-comment.repository';
+import { PostCommentService } from './services/post-comment.service';
 
 @Module({
   imports: [PrismaModule, RedisModule, FriendsModule],
   controllers: [PostsController],
-  providers: [PostsService, PostsRepository, PostMediaRepository],
-  exports: [PostsService],
+  providers: [
+    PostService,
+    PostRepository,
+    PostMediaRepository,
+    PostMediaService,
+    PostLikeRepository,
+    PostLikeService,
+    PostCommentRepository,
+    PostCommentService,
+  ],
+  exports: [PostService, PostCommentService, PostLikeService, PostMediaService],
 })
 export class PostsModule {}
-

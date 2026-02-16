@@ -13,6 +13,7 @@ import { FriendsModule } from './modules/friends/friends.module';
 import { CommonModule } from './common/common.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { RecommendModule } from './modules/recommend/recommend.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RecommendModule } from './modules/recommend/recommend.module';
     FriendRequestsModule,
     FriendsModule,
     RecommendModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

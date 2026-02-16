@@ -2,16 +2,23 @@ import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuard
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { PostsService } from './posts.service';
-import { CreatePostDto } from './dto/create-post.dto';
+import { PostService } from '../services/post.service';
+import { PostLikeService } from '../services/post-like.service';
+import { CreatePostDto } from '../dto/create-post.dto';
 import { cloudinaryPostStorage } from 'src/config/multer.config';
+
+import { PostCommentService } from '../services/post-comment.service';
 
 @ApiTags('posts')
 @Controller('posts')
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('JWT-auth')
 export class PostsController {
-  constructor(private postsService: PostsService) {}
+  constructor(
+    private postService: PostService,
+    private postLikeService: PostLikeService,
+    private postCommentService: PostCommentService,
+  ) {}
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
   @ApiResponse({ status: 201, description: 'Post created' })
@@ -46,7 +53,7 @@ export class PostsController {
         order: idx,
       })) ?? [];
 
-    return this.postsService.createPost({
+    return this.postService.createPost({
       user_id: userId,
       content: dto.content ?? null,
       media,
@@ -58,7 +65,7 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Post liked/unliked successfully' })
   async toggleLike(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
-    return this.postsService.toggleLike(id, userId);
+    return this.postLikeService.toggleLike(id, userId);
   }
   @Post('seen')
   @ApiOperation({ summary: 'Mark multiple posts as seen' })
@@ -79,7 +86,7 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Posts marked as seen' })
   async markAsSeen(@Body('postIds') postIds: string[], @Req() req: any) {
     const userId = req.user.userId;
-    await this.postsService.markPostsAsSeen(postIds, userId);
+    await this.postService.markPostsAsSeen(postIds, userId);
     return { success: true, message: 'Posts marked as seen' };
   }
 
@@ -92,7 +99,43 @@ export class PostsController {
     @Query('limit') limit: number = 10,
   ) {
     const userId = req.user.userId;
-    return this.postsService.getUnseenPosts(userId, page, limit);
+    return this.postService.getUnseenPosts(userId, page, limit);
+  }
+
+  @Get(':id/comments')
+  @ApiOperation({ summary: 'Get comments for a post' })
+  @ApiResponse({ status: 200, description: 'List of comments' })
+  async getPostComments(
+    @Param('id') id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.postCommentService.getPostComments(id, page, limit);
+  }
+
+  @Post(':id/comments')
+  @ApiOperation({ summary: 'Create a comment for a post' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string' },
+        parentId: { type: 'string', nullable: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Comment created' })
+  async createComment(
+    @Param('id') postId: string,
+    @Req() req: any,
+    @Body() body: { content: string; parentId?: string },
+  ) {
+    const userId = req.user.userId;
+    return this.postCommentService.createComment({
+      userId,
+      postId,
+      content: body.content,
+      parentId: body.parentId,
+    });
   }
 }
-

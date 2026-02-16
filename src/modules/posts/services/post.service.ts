@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PostsRepository } from './posts.repository';
-import { PostMediaRepository } from '../post-media/post-media.repository';
+import { PostRepository } from '../repositories/post.repository';
 import { RedisService } from 'src/redis/redis.service';
-import { FriendsService } from '../friends/friends.service';
+import { FriendsService } from '../../friends/friends.service';
+import { PostLikeRepository } from '../repositories/post-like.repository';
 
 @Injectable()
-export class PostsService {
+export class PostService {
   constructor(
     private prisma: PrismaService,
-    private postsRepository: PostsRepository,
-    private postMediaRepository: PostMediaRepository,
+    private postRepository: PostRepository,
     private redisService: RedisService,
     private friendsService: FriendsService,
+    private postLikeRepository: PostLikeRepository,
   ) {}
 
   /**
@@ -92,17 +92,7 @@ export class PostsService {
       };
     });
   }
-  async toggleLike(postId: bigint | number | string, userId: bigint | number | string) {
-    const hasLiked = await this.postsRepository.checkLike(postId, userId);
 
-    if (hasLiked) {
-      await this.postsRepository.unlikePost(postId, userId);
-      return { status: 'unliked' };
-    } else {
-      await this.postsRepository.likePost(postId, userId);
-      return { status: 'liked' };
-    }
-  }
   async markPostsAsSeen(postIds: (string | number)[], userId: string | number) {
     if (!postIds.length) return;
     const key = `user:${userId}:seen_posts`;
@@ -121,14 +111,14 @@ export class PostsService {
     const skip = (pageNumber - 1) * limitNumber;
 
     const [posts, total] = await Promise.all([
-      this.postsRepository.findUnseenPosts(
+      this.postRepository.findUnseenPosts(
         BigInt(userId),
         seenPostIds.map((id) => BigInt(id)),
         friendIds,
         skip,
         limitNumber,
       ),
-      this.postsRepository.countUnseenPosts(
+      this.postRepository.countUnseenPosts(
         BigInt(userId),
         seenPostIds.map((id) => BigInt(id)),
         friendIds,
@@ -136,6 +126,13 @@ export class PostsService {
     ]);
 
     const totalPages = Math.ceil(total / limitNumber);
+
+    const likedPosts = await this.postLikeRepository.findLikesForPosts(
+      userId,
+      posts.map((p) => p.id),
+    );
+
+    const likedPostIds = new Set(likedPosts.map((lp) => lp.post_id.toString()));
 
     return {
       success: true,
@@ -149,6 +146,7 @@ export class PostsService {
           like_count: post.like_count || 0,
           comment_count: post.comment_count || 0,
           share_count: post.share_count || 0,
+          has_liked: likedPostIds.has(post.id.toString()),
           user: {
             id: post.users.id.toString(),
             username: post.users.username,

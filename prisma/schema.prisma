@@ -74,6 +74,7 @@ model posts {
   comment_count Int          @default(0)
   share_count   Int          @default(0)
   comments      comments[]
+  post_comments post_comments[]
   post_likes    post_likes[]
   post_media    post_media[]
   users         users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -155,6 +156,26 @@ model friends {
   @@map("friends")
 }
 
+
+model post_comments {
+  id         BigInt    @id @default(autoincrement())
+  post_id    BigInt
+  user_id    BigInt
+  content    String
+  parent_id  BigInt?
+  depth      Int       @default(0)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  
+  posts           posts           @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users           users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent_comment  post_comments?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies         post_comments[] @relation("CommentReplies")
+
+  @@index([post_id, created_at(sort: Desc)], map: "idx_post_created")
+  @@index([parent_id], map: "idx_parent_id")
+  @@map("post_comments")
+}
+
 model users {
   id                                          BigInt            @id @default(autoincrement())
   username                                    String            @unique @db.VarChar(50)
@@ -165,7 +186,10 @@ model users {
   bio                                         String?
   created_at                                  DateTime?         @default(now()) @db.Timestamp(6)
   name                                        String            @db.VarChar(100)
+  
+  // Relations
   comments                                    comments[]
+  post_comments                               post_comments[]
   conversations_conversations_user1_idTousers conversations[]   @relation("conversations_user1_idTousers")
   conversations_conversations_user2_idTousers conversations[]   @relation("conversations_user2_idTousers")
   follows_follows_follower_idTousers          follows[]         @relation("follows_follower_idTousers")
@@ -180,3 +204,4 @@ model users {
   friends_user                                friends[]         @relation("friends_user")
   friends_friend                              friends[]         @relation("friends_friend")
 }
+

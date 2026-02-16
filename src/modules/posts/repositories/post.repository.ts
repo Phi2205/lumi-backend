@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
-export class PostsRepository {
+export class PostRepository {
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -87,72 +87,6 @@ export class PostsRepository {
     });
   }
 
-  async likePost(postId: bigint | number | string, userId: bigint | number | string) {
-    const pId = BigInt(postId);
-    const uId = BigInt(userId);
-
-    return this.prisma.$transaction(async (tx) => {
-      const like = await tx.post_likes.create({
-        data: {
-          post_id: pId,
-          user_id: uId,
-        },
-      });
-
-      await tx.posts.update({
-        where: { id: pId },
-        data: {
-          like_count: {
-            increment: 1,
-          },
-        },
-      });
-
-      return like;
-    });
-  }
-
-  async unlikePost(postId: bigint | number | string, userId: bigint | number | string) {
-    const pId = BigInt(postId);
-    const uId = BigInt(userId);
-
-    return this.prisma.$transaction(async (tx) => {
-      const like = await tx.post_likes.delete({
-        where: {
-          post_id_user_id: {
-            post_id: pId,
-            user_id: uId,
-          },
-        },
-      });
-
-      await tx.posts.update({
-        where: { id: pId },
-        data: {
-          like_count: {
-            decrement: 1,
-          },
-        },
-      });
-
-      return like;
-    });
-  }
-  async checkLike(postId: bigint | number | string, userId: bigint | number | string) {
-    const pId = BigInt(postId);
-    const uId = BigInt(userId);
-
-    const like = await this.prisma.post_likes.findUnique({
-      where: {
-        post_id_user_id: {
-          post_id: pId,
-          user_id: uId,
-        },
-      },
-    });
-
-    return !!like;
-  }
   async findUnseenPosts(
     userId: bigint | number | string,
     seenPostIds: (bigint | number | string)[],
@@ -200,5 +134,15 @@ export class PostsRepository {
       },
     });
   }
-}
 
+  async incrementCommentCount(postId: bigint | number | string) {
+    return this.prisma.posts.update({
+      where: { id: BigInt(postId) },
+      data: {
+        comment_count: {
+          increment: 1,
+        },
+      },
+    });
+  }
+}
