@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+
 
 @Injectable()
 export class PostCommentRepository {
@@ -120,4 +122,16 @@ export class PostCommentRepository {
       },
     });
   }
+
+  async delete(
+    id: bigint | number | string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return (tx || this.prisma).post_comments.delete({
+      where: {
+        id: BigInt(id),
+      },
+    });
+  }
 }
+

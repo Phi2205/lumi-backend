@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef, Delete } from '@nestjs/common';
 import { CommentGateway } from 'src/modules/realtime/gateways/comment.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -62,6 +62,24 @@ export class PostsController {
       media,
     });
   }
+
+  @Delete(':id/comments/:commentId')
+  @ApiOperation({ summary: 'Delete a comment' })
+  @ApiResponse({ status: 200, description: 'Comment deleted successfully' })
+  async deleteComment(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.userId;
+    const result = await this.postCommentService.deleteComment(commentId, userId);
+
+    // Broadcast to realtime gateway
+    this.commentGateway.broadcastDeleteComment(id, commentId);
+
+    return result;
+  }
+
 
   @Post(':id/like')
   @ApiOperation({ summary: 'Toggle like a post' })

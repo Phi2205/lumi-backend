@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+
 
 @Injectable()
 export class PostRepository {
@@ -135,8 +137,11 @@ export class PostRepository {
     });
   }
 
-  async incrementCommentCount(postId: bigint | number | string) {
-    return this.prisma.posts.update({
+  async incrementCommentCount(
+    postId: bigint | number | string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return (tx || this.prisma).posts.update({
       where: { id: BigInt(postId) },
       data: {
         comment_count: {
@@ -145,4 +150,20 @@ export class PostRepository {
       },
     });
   }
+
+  async decrementCommentCount(
+    postId: bigint | number | string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return (tx || this.prisma).posts.update({
+      where: { id: BigInt(postId) },
+      data: {
+        comment_count: {
+          decrement: 1,
+        },
+      },
+    });
+  }
 }
+
+

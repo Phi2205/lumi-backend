@@ -29,6 +29,13 @@ export class CommentGateway {
     this.server.to(`post:${postId}`).emit('new_comment', comment);
   }
 
+  broadcastDeleteComment(postId: string, commentId: string) {
+    this.server.to(`post:${postId}`).emit('delete_comment', {
+      post_id: postId,
+      comment_id: commentId,
+    });
+  }
+
   @SubscribeMessage('join_post')
   handleJoinPost(
     @MessageBody() data: { postId: string },
@@ -47,35 +54,35 @@ export class CommentGateway {
     console.log(`Socket ${socket.id} left post:${data.postId}`);
   }
 
-  @SubscribeMessage('new_comment')
-  async handleComment(
-    @MessageBody() data: { postId: string; content: string; parentId?: string },
-    @ConnectedSocket() socket: Socket,
-  ) {
-    console.log('New comment:', data);
-    const user = socket.data.user;
+  // @SubscribeMessage('new_comment')
+  // async handleComment(
+  //   @MessageBody() data: { postId: string; content: string; parentId?: string },
+  //   @ConnectedSocket() socket: Socket,
+  // ) {
+  //   console.log('New comment:', data);
+  //   const user = socket.data.user;
 
-    if (!user) {
-      // Should handle unauthorized
-      console.log('Unauthorized comment attempt');
-      return; 
-    }
+  //   if (!user) {
+  //     // Should handle unauthorized
+  //     console.log('Unauthorized comment attempt');
+  //     return; 
+  //   }
 
-    try {
-      const response = await this.postCommentService.createComment({
-        userId: user.sub || user.id, // Depends on JWT payload
-        postId: data.postId,
-        content: data.content,
-        parentId: data.parentId,
-      });
+  //   try {
+  //     const response = await this.postCommentService.createComment({
+  //       userId: user.sub || user.id, // Depends on JWT payload
+  //       postId: data.postId,
+  //       content: data.content,
+  //       parentId: data.parentId,
+  //     });
 
-      // The service already broadcasts the comment
-      // this.server.to(`post:${data.postId}`).emit('new_comment', response);
+  //     // The service already broadcasts the comment
+  //     // this.server.to(`post:${data.postId}`).emit('new_comment', response);
 
-      return { status: 'ok', data: response.data };
-    } catch (error) {
-      console.error('Error creating comment:', error);
-      return { status: 'error', message: 'Failed to create comment' };
-    }
-  }
+  //     return { status: 'ok', data: response.data };
+  //   } catch (error) {
+  //     console.error('Error creating comment:', error);
+  //     return { status: 'error', message: 'Failed to create comment' };
+  //   }
+  // }
 }

@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PostCommentRepository } from '../repositories/post-comment.repository';
 import { PostRepository } from 'src/modules/posts/repositories/post.repository';
+import { PrismaService } from 'src/prisma/prisma.service';
+
 
 
 @Injectable()
 export class PostCommentService {
   constructor(
     private readonly postCommentRepository: PostCommentRepository,
-
     private readonly postRepository: PostRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async createComment(data: {
@@ -161,4 +163,29 @@ export class PostCommentService {
       },
     };
   }
+
+  async deleteComment(commentId: string, userId: string) {
+    const comment = await this.postCommentRepository.findById(commentId);
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Check if the user is the owner of the comment
+    if (comment.user_id !== BigInt(userId)) {
+      throw new ForbiddenException('You can only delete your own comments');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.postCommentRepository.delete(commentId, tx);
+      await this.postRepository.decrementCommentCount(comment.post_id, tx);
+    });
+
+    return {
+      success: true,
+      message: 'Comment deleted successfully',
+    };
+  }
 }
+
+
