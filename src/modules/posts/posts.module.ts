@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { FriendsModule } from '../friends/friends.module';
+import { RealtimeModule } from '../realtime/realtime.module';
+
 import { PostsController } from './controllers/posts.controller';
 import { PostService } from './services/post.service';
 import { PostRepository } from './repositories/post.repository';
@@ -13,7 +16,7 @@ import { PostCommentRepository } from './repositories/post-comment.repository';
 import { PostCommentService } from './services/post-comment.service';
 
 @Module({
-  imports: [PrismaModule, RedisModule, FriendsModule],
+  imports: [PrismaModule, RedisModule, FriendsModule, forwardRef(() => RealtimeModule)],
   controllers: [PostsController],
   providers: [
     PostService,

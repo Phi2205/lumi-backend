@@ -8,7 +8,12 @@ import {
 import { Server, Socket } from 'socket.io';
 import { RealtimeService } from '../realtime.service';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.FRONT_END_URL,
+    credentials: true,
+  },
+})
 export class ChatGateway {
   @WebSocketServer()
   server: Server;

@@ -11,7 +11,8 @@ import { RealtimeService } from '../realtime.service';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: process.env.FRONT_END_URL,
+    credentials: true,
   },
 })
 export class NotificationGateway

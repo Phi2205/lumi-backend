@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PostCommentRepository } from '../repositories/post-comment.repository';
 import { PostRepository } from 'src/modules/posts/repositories/post.repository';
 
+
 @Injectable()
 export class PostCommentService {
   constructor(
     private readonly postCommentRepository: PostCommentRepository,
+
     private readonly postRepository: PostRepository,
   ) {}
 
@@ -37,7 +39,7 @@ export class PostCommentService {
     // Update post comment count
     await this.postRepository.incrementCommentCount(postId);
 
-    return {
+    const responseData = {
       success: true,
       message: 'Comment created successfully',
       data: {
@@ -56,6 +58,10 @@ export class PostCommentService {
         },
       },
     };
+
+
+
+    return responseData;
   }
 
   async getPostComments(postId: string, page = 1, limit = 10) {

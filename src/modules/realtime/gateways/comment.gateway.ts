@@ -5,16 +5,29 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
+import { Inject, forwardRef } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { PostCommentService } from '../../posts/services/post-comment.service';
 
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.FRONT_END_URL,
+    credentials: true,
+  },
+})
 export class CommentGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly postCommentService: PostCommentService) {}
+  constructor(
+    @Inject(forwardRef(() => PostCommentService))
+    private readonly postCommentService: PostCommentService,
+  ) {}
+
+  broadcastComment(postId: string, comment: any) {
+    this.server.to(`post:${postId}`).emit('new_comment', comment);
+  }
 
   @SubscribeMessage('join_post')
   handleJoinPost(
@@ -49,17 +62,17 @@ export class CommentGateway {
     }
 
     try {
-      const comment = await this.postCommentService.createComment({
+      const response = await this.postCommentService.createComment({
         userId: user.sub || user.id, // Depends on JWT payload
         postId: data.postId,
         content: data.content,
         parentId: data.parentId,
       });
 
-      // Broadcast to everyone in the post room
-      this.server.to(`post:${data.postId}`).emit('new_comment', comment);
+      // The service already broadcasts the comment
+      // this.server.to(`post:${data.postId}`).emit('new_comment', response);
 
-      return { status: 'ok', data: comment };
+      return { status: 'ok', data: response.data };
     } catch (error) {
       console.error('Error creating comment:', error);
       return { status: 'error', message: 'Failed to create comment' };

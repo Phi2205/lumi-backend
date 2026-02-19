@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef } from '@nestjs/common';
+import { CommentGateway } from 'src/modules/realtime/gateways/comment.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -18,6 +19,8 @@ export class PostsController {
     private postService: PostService,
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
+    @Inject(forwardRef(() => CommentGateway))
+    private readonly commentGateway: CommentGateway,
   ) {}
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
@@ -142,11 +145,16 @@ export class PostsController {
     @Body() body: { content: string; parentId?: string },
   ) {
     const userId = req.user.userId;
-    return this.postCommentService.createComment({
+    const result = await this.postCommentService.createComment({
       userId,
       postId,
       content: body.content,
       parentId: body.parentId,
     });
+
+    // Broadcast to realtime gateway
+    this.commentGateway.broadcastComment(postId, result.data);
+
+    return result;
   }
 }

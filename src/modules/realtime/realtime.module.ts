@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RealtimeService } from './realtime.service';
@@ -12,7 +12,7 @@ import { PostsModule } from '../posts/posts.module'; // Import PostsModule
 @Module({
   imports: [
     ConfigModule,
-    PostsModule,
+    forwardRef(() => PostsModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -29,6 +29,6 @@ import { PostsModule } from '../posts/posts.module'; // Import PostsModule
     ChatGateway,
     RedisIoAdapter,
   ],
-  exports: [RealtimeService],
+  exports: [RealtimeService, CommentGateway],
 })
 export class RealtimeModule {}
