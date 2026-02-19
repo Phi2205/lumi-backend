@@ -58,19 +58,9 @@ export class PostCommentRepository {
             avatar_url: true,
           },
         },
-        replies: {
-          include: {
-            users: {
-              select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar_url: true,
-              },
-            },
-          },
-          orderBy: {
-            created_at: 'asc',
+        _count: {
+          select: {
+            replies: true,
           },
         },
       },
@@ -82,11 +72,51 @@ export class PostCommentRepository {
     });
   }
 
+  async findByParentId(
+    parentId: bigint | number | string,
+    skip?: number,
+    take?: number,
+  ) {
+    return this.prisma.post_comments.findMany({
+      where: {
+        parent_id: BigInt(parentId),
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        _count: {
+          select: {
+            replies: true,
+          },
+        },
+      },
+      orderBy: {
+        created_at: 'asc',
+      },
+      skip,
+      take,
+    });
+  }
+
   async countByPostId(postId: bigint | number | string) {
     return this.prisma.post_comments.count({
       where: {
         post_id: BigInt(postId),
         parent_id: null,
+      },
+    });
+  }
+
+  async countByParentId(parentId: bigint | number | string) {
+    return this.prisma.post_comments.count({
+      where: {
+        parent_id: BigInt(parentId),
       },
     });
   }

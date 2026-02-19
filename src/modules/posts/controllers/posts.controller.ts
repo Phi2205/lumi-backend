@@ -113,6 +113,17 @@ export class PostsController {
     return this.postCommentService.getPostComments(id, page, limit);
   }
 
+  @Get(':id/comments/:parentId/replies')
+  @ApiOperation({ summary: 'Get replies for a comment' })
+  @ApiResponse({ status: 200, description: 'List of replies' })
+  async getCommentReplies(
+    @Param('parentId') parentId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.postCommentService.getCommentReplies(parentId, page, limit);
+  }
+
   @Post(':id/comments')
   @ApiOperation({ summary: 'Create a comment for a post' })
   @ApiBody({

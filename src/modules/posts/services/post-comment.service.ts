@@ -84,12 +84,64 @@ export class PostCommentService {
         name: comment.users.name,
         avatar_url: comment.users.avatar_url,
       },
-      replies: comment.replies?.map(formatComment) || [],
+      replies: [], // Root comments fetched initially have no replies loaded
+      has_replies: (comment as any)._count?.replies > 0,
     });
 
     return {
       success: true,
       message: 'Get comments successfully',
+      data: {
+        items: comments.map(formatComment),
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPreviousPage: pageNumber > 1,
+        },
+      },
+    };
+  }
+
+  async getCommentReplies(parentId: string, page = 1, limit = 10) {
+    const limitNumber = Number(limit);
+    const pageNumber = Number(page);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [comments, total] = await Promise.all([
+      this.postCommentRepository.findByParentId(
+        parentId,
+        skip,
+        limitNumber,
+      ),
+      this.postCommentRepository.countByParentId(parentId),
+    ]);
+
+    const totalPages = Math.ceil(total / limitNumber);
+
+    const formatComment = (comment: any) => ({
+      id: comment.id.toString(),
+      post_id: comment.post_id.toString(),
+      user_id: comment.user_id.toString(),
+      content: comment.content,
+      parent_id: comment.parent_id ? comment.parent_id.toString() : null,
+      depth: comment.depth,
+      created_at: comment.created_at,
+      user: {
+        id: comment.users.id.toString(),
+        username: comment.users.username,
+        name: comment.users.name,
+        avatar_url: comment.users.avatar_url,
+      },
+      replies: [], // Root comments fetched initially have no replies loaded
+      has_replies: (comment as any)._count?.replies > 0,
+    });
+
+    return {
+      success: true,
+      message: 'Get replies successfully',
       data: {
         items: comments.map(formatComment),
         pagination: {
