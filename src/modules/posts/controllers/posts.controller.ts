@@ -88,6 +88,18 @@ export class PostsController {
     const userId = req.user.userId;
     return this.postLikeService.toggleLike(id, userId);
   }
+
+  @Get(':id/likes')
+  @ApiOperation({ summary: 'Get all likes for a post' })
+  @ApiResponse({ status: 200, description: 'List of users who liked the post' })
+  async getLikesByPostId(
+    @Param('id') id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.postLikeService.getLikesByPostId(id, +page, +limit);
+  }
+
   @Post('seen')
   @ApiOperation({ summary: 'Mark multiple posts as seen' })
   @ApiBody({
@@ -174,5 +186,54 @@ export class PostsController {
     this.commentGateway.broadcastComment(postId, result.data);
 
     return result;
+  }
+
+  // ─── Share ───────────────────────────────────────────────────────────────────
+
+  @Post(':id/share')
+  @ApiOperation({ summary: 'Share a post' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', nullable: true, description: 'Nội dung kèm khi share (tuỳ chọn)' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Post shared successfully' })
+  async sharePost(
+    @Param('id') originalPostId: string,
+    @Req() req: any,
+    @Body('content') content?: string,
+  ) {
+    const userId = req.user.userId;
+    return this.postService.sharePost({
+      user_id: userId,
+      original_post_id: originalPostId,
+      content: content ?? null,
+    });
+  }
+
+  @Get('user/shares')
+  @ApiOperation({ summary: 'Get all posts shared by the current user' })
+  @ApiResponse({ status: 200, description: 'List of shared posts by user' })
+  async getMySharedPosts(
+    @Req() req: any,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.postService.getSharedPostsByUser(userId, +page, +limit);
+  }
+
+  @Get(':id/shares')
+  @ApiOperation({ summary: 'Get all shares of a post' })
+  @ApiResponse({ status: 200, description: 'List of users who shared the post' })
+  async getPostShares(
+    @Param('id') postId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.postService.getSharesByPost(postId, +page, +limit);
   }
 }

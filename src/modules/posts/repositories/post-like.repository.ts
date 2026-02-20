@@ -83,4 +83,37 @@ export class PostLikeRepository {
       },
     });
   }
+
+  async findLikesByPostId(
+    postId: bigint | number | string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const pId = BigInt(postId);
+    const skip = (page - 1) * limit;
+
+    const [likes, total] = await this.prisma.$transaction([
+      this.prisma.post_likes.findMany({
+        where: { post_id: pId },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar_url: true,
+            },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.post_likes.count({
+        where: { post_id: pId },
+      }),
+    ]);
+
+    return { likes, total };
+  }
 }
