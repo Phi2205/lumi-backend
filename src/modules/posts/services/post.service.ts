@@ -93,6 +93,78 @@ export class PostService {
     });
   }
 
+  /**
+   * Lấy post theo ID (kèm original_post nếu là bài share)
+   */
+  async getPostById(postId: string | number, userId: string | number) {
+    const post = await this.postRepository.findByIdWithOriginal(postId);
+
+    if (!post) {
+      return {
+        success: false,
+        message: 'Post not found',
+        data: null,
+      };
+    }
+
+    // Check if user has liked this post
+    const likedPosts = await this.postLikeRepository.findLikesForPosts(
+      userId,
+      [post.id],
+    );
+    const hasLiked = likedPosts.length > 0;
+
+    return {
+      success: true,
+      message: 'Get post successfully',
+      data: {
+        id: post.id.toString(),
+        user_id: post.user_id.toString(),
+        content: post.content,
+        created_at: post.created_at,
+        like_count: post.like_count || 0,
+        comment_count: post.comment_count || 0,
+        share_count: post.share_count || 0,
+        has_liked: hasLiked,
+        user: {
+          id: post.users.id.toString(),
+          username: post.users.username,
+          name: post.users.name,
+          avatar_url: post.users.avatar_url,
+        },
+        post_media: post.post_media.map((m) => ({
+          id: m.id.toString(),
+          media_url: m.media_url,
+          media_type: m.media_type,
+          order: m.order,
+        })),
+        original_post: (post as any).original_post
+          ? {
+              id: (post as any).original_post.id.toString(),
+              user_id: (post as any).original_post.user_id.toString(),
+              content: (post as any).original_post.content,
+              created_at: (post as any).original_post.created_at,
+              like_count: (post as any).original_post.like_count || 0,
+              comment_count: (post as any).original_post.comment_count || 0,
+              share_count: (post as any).original_post.share_count || 0,
+              user: {
+                id: (post as any).original_post.users.id.toString(),
+                username: (post as any).original_post.users.username,
+                name: (post as any).original_post.users.name,
+                avatar_url: (post as any).original_post.users.avatar_url,
+              },
+              post_media: (post as any).original_post.post_media.map((m: any) => ({
+                id: m.id.toString(),
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order,
+              })),
+            }
+          : null,
+      },
+    };
+  }
+
   async markPostsAsSeen(postIds: (string | number)[], userId: string | number) {
     if (!postIds.length) return;
     const key = `user:${userId}:seen_posts`;

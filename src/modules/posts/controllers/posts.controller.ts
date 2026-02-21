@@ -135,6 +135,14 @@ export class PostsController {
     return this.postService.getUnseenPosts(userId, page, limit);
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a post by ID' })
+  @ApiResponse({ status: 200, description: 'Post details' })
+  async getPostById(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.postService.getPostById(id, userId);
+  }
+
   @Get(':id/comments')
   @ApiOperation({ summary: 'Get comments for a post' })
   @ApiResponse({ status: 200, description: 'List of comments' })
