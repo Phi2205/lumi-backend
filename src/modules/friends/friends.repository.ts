@@ -122,4 +122,15 @@ export class FriendsRepository {
       },
     });
   }
+  async getFriendIds(userId: bigint | string) {
+    const friends = await this.prisma.friends.findMany({
+      where: {
+        user_id: BigInt(userId),
+      },
+      select: {
+        friend_id: true,
+      },
+    });
+    return friends.map((f) => f.friend_id);
+  }
 }

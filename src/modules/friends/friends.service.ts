@@ -107,4 +107,10 @@ export class FriendsService {
       status: 'none',
     };
   }
+  /**
+   * Lấy danh sách ID bạn bè
+   */
+  async getFriendIds(userId: string) {
+    return this.friendsRepository.getFriendIds(userId);
+  }
 }

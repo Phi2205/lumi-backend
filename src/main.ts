@@ -1,21 +1,6 @@
-import * as fs from 'fs';
-import * as dotenv from 'dotenv';
+import './env-loader'; // Must be first!
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
-
-// Load and override environment variables from .env so .env takes precedence
-// over any system environment variables (useful for local development).
-try {
-  const envPath = '.env';
-  if (fs.existsSync(envPath)) {
-    const parsed = dotenv.parse(fs.readFileSync(envPath));
-    for (const k of Object.keys(parsed)) {
-      process.env[k] = parsed[k];
-    }
-  }
-} catch (e) {
-  // ignore errors reading .env
-}
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -28,7 +13,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: true, // Cho phép tất cả origins (hoặc chỉ định domain cụ thể)
+    origin: process.env.FRONT_END_URL, // Cho phép tất cả origins (hoặc chỉ định domain cụ thể)
     credentials: true, // Cho phép gửi cookies
   });
 
