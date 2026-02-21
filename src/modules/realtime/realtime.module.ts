@@ -8,11 +8,13 @@ import { NotificationGateway } from './gateways/notification.gateway';
 import { ChatGateway } from './gateways/chat.gateway';
 import { RedisIoAdapter } from './adapters/redis.adapter';
 import { PostsModule } from '../posts/posts.module'; // Import PostsModule
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
     ConfigModule,
     forwardRef(() => PostsModule),
+    ChatModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

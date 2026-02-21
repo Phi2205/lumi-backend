@@ -7,17 +7,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model conversations {
-  id                                  BigInt     @id @default(autoincrement())
-  user1_id                            BigInt
-  user2_id                            BigInt
-  created_at                          DateTime?  @default(now()) @db.Timestamp(6)
-  users_conversations_user1_idTousers users      @relation("conversations_user1_idTousers", fields: [user1_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_conversations_user2_idTousers users      @relation("conversations_user2_idTousers", fields: [user2_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  messages                            messages[]
+  id                        BigInt                      @id @default(autoincrement())
+  type                      ConversationType            @default(private)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  conversation_participants conversation_participants[]
+  messages                  messages[]
+}
 
-  @@unique([user1_id, user2_id], map: "unique_conversation")
+model conversation_participants {
+  id              BigInt    @id @default(autoincrement())
+  conversation_id BigInt
+  user_id         BigInt
+  joined_at       DateTime? @default(now()) @db.Timestamp(6)
+
+  conversations conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([conversation_id, user_id])
+  @@index([conversation_id], map: "idx_conversation_participants_conversation")
+  @@index([user_id], map: "idx_conversation_participants_user")
 }
 
 model follows {
@@ -35,15 +44,30 @@ model messages {
   conversation_id BigInt
   sender_id       BigInt
   content         String?
-  media_url       String?
-  message_type    String?       @default("text") @db.VarChar(10)
-  seen            Boolean?      @default(false)
+  type            MessageType   @default(text)
   created_at      DateTime?     @default(now()) @db.Timestamp(6)
-  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users           users         @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  seen_at         DateTime?     @db.Timestamp(6)
+  conversations          conversations          @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users                  @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  message_attachments    message_attachments[]
 
   @@index([conversation_id], map: "idx_messages_conversation")
   @@index([created_at(sort: Desc)], map: "idx_messages_created_at")
+}
+
+model message_attachments {
+  id         BigInt   @id @default(autoincrement())
+  message_id BigInt
+  url        String
+  file_type  String
+  width      Int?
+  height     Int?
+  file_size  Int?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  messages messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([message_id], map: "idx_message_attachments_message")
 }
 
 model post_likes {
@@ -57,20 +81,20 @@ model post_likes {
 }
 
 model posts {
-  id               BigInt       @id @default(autoincrement())
+  id               BigInt          @id @default(autoincrement())
   user_id          BigInt
   content          String?
-  created_at       DateTime?    @default(now()) @db.Timestamp(6)
-  like_count       Int          @default(0)
-  comment_count    Int          @default(0)
-  share_count      Int          @default(0)
+  created_at       DateTime?       @default(now()) @db.Timestamp(6)
+  like_count       Int             @default(0)
+  comment_count    Int             @default(0)
+  share_count      Int             @default(0)
   original_post_id BigInt?
   post_comments    post_comments[]
   post_likes       post_likes[]
   post_media       post_media[]
-  original_post    posts?       @relation("PostShares", fields: [original_post_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  shared_posts     posts[]      @relation("PostShares")
-  users            users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  original_post    posts?          @relation("PostShares", fields: [original_post_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  shared_posts     posts[]         @relation("PostShares")
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([created_at(sort: Desc)], map: "idx_posts_created_at")
   @@index([user_id], map: "idx_posts_user")
@@ -115,6 +139,17 @@ model story_views {
   @@id([story_id, user_id])
 }
 
+enum ConversationType {
+  private
+  group
+}
+
+enum MessageType {
+  text
+  image
+  video
+}
+
 enum FriendRequestStatus {
   pending
   accepted
@@ -150,7 +185,6 @@ model friends {
   @@map("friends")
 }
 
-
 model post_comments {
   id         BigInt    @id @default(autoincrement())
   post_id    BigInt
@@ -159,44 +193,40 @@ model post_comments {
   parent_id  BigInt?
   depth      Int       @default(0)
   created_at DateTime? @default(now()) @db.Timestamp(6)
-  
-  posts           posts           @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  users           users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  parent_comment  post_comments?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
-  replies         post_comments[] @relation("CommentReplies")
+
+  posts          posts           @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  users          users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent_comment post_comments?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies        post_comments[] @relation("CommentReplies")
 
   @@index([post_id, created_at(sort: Desc)], map: "idx_post_created")
   @@index([parent_id], map: "idx_parent_id")
   @@map("post_comments")
 }
 
-
-
 model users {
-  id                                          BigInt            @id @default(autoincrement())
-  username                                    String            @unique @db.VarChar(50)
-  email                                       String            @unique @db.VarChar(100)
-  password_hash                               String
-  role                                        UserRole          @default(user)
-  avatar_url                                  String?
-  bio                                         String?
-  created_at                                  DateTime?         @default(now()) @db.Timestamp(6)
-  name                                        String            @db.VarChar(100)
-  
-  // Relations
-  post_comments                               post_comments[]
-  conversations_conversations_user1_idTousers conversations[]   @relation("conversations_user1_idTousers")
-  conversations_conversations_user2_idTousers conversations[]   @relation("conversations_user2_idTousers")
-  follows_follows_follower_idTousers          follows[]         @relation("follows_follower_idTousers")
-  follows_follows_following_idTousers         follows[]         @relation("follows_following_idTousers")
-  messages                                    messages[]
-  post_likes                                  post_likes[]
-  posts                                       posts[]
-  stories                                     stories[]
-  story_views                                 story_views[]
-  friend_requests_requester                   friend_requests[] @relation("friend_requests_requester")
-  friend_requests_receiver                    friend_requests[] @relation("friend_requests_receiver")
-  friends_user                                friends[]         @relation("friends_user")
-  friends_friend                              friends[]         @relation("friends_friend")
-}
+  id            BigInt    @id @default(autoincrement())
+  username      String    @unique @db.VarChar(50)
+  email         String    @unique @db.VarChar(100)
+  password_hash String
+  role          UserRole  @default(user)
+  avatar_url    String?
+  bio           String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  name          String    @db.VarChar(100)
 
+  // Relations
+  post_comments                       post_comments[]
+  conversation_participants           conversation_participants[]
+  follows_follows_follower_idTousers  follows[]                   @relation("follows_follower_idTousers")
+  follows_follows_following_idTousers follows[]                   @relation("follows_following_idTousers")
+  messages                            messages[]
+  post_likes                          post_likes[]
+  posts                               posts[]
+  stories                             stories[]
+  story_views                         story_views[]
+  friend_requests_requester           friend_requests[]           @relation("friend_requests_requester")
+  friend_requests_receiver            friend_requests[]           @relation("friend_requests_receiver")
+  friends_user                        friends[]                   @relation("friends_user")
+  friends_friend                      friends[]                   @relation("friends_friend")
+}
