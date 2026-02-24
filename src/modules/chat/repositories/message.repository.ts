@@ -35,12 +35,12 @@ export class MessageRepository {
   }
 
   /**
-   * Lấy tin nhắn theo conversation (phân trang)
+   * Lấy tin nhắn theo conversation (phân trang theo cursor hoặc offset)
    */
   async findByConversation(
     conversationId: string,
-    skip: number = 0,
-    take: number = 50,
+    cursor?: string,
+    limit: number = 50,
   ) {
     return this.prisma.messages.findMany({
       where: {
@@ -56,9 +56,14 @@ export class MessageRepository {
           },
         },
       },
-      orderBy: { created_at: 'desc' },
-      skip,
-      take,
+      orderBy: { id: 'desc' },
+      take: limit,
+      ...(cursor
+        ? {
+            cursor: { id: BigInt(cursor) },
+            skip: 1,
+          }
+        : {}),
     });
   }
 }

@@ -2,12 +2,9 @@ import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RealtimeService } from './realtime.service';
-import { PostGateway } from './gateways/post.gateway';
-import { CommentGateway } from './gateways/comment.gateway';
-import { NotificationGateway } from './gateways/notification.gateway';
-import { ChatGateway } from './gateways/chat.gateway';
+import { SocketGateway } from './gateways/socket.gateway';
 import { RedisIoAdapter } from './adapters/redis.adapter';
-import { PostsModule } from '../posts/posts.module'; // Import PostsModule
+import { PostsModule } from '../posts/posts.module';
 import { ChatModule } from '../chat/chat.module';
 
 @Module({
@@ -25,12 +22,9 @@ import { ChatModule } from '../chat/chat.module';
   ],
   providers: [
     RealtimeService,
-    PostGateway,
-    CommentGateway,
-    NotificationGateway, // This gateway handles connection/auth
-    ChatGateway,
+    SocketGateway,
     RedisIoAdapter,
   ],
-  exports: [RealtimeService, CommentGateway],
+  exports: [RealtimeService, SocketGateway],
 })
 export class RealtimeModule {}

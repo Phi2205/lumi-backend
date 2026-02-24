@@ -102,19 +102,19 @@ export class UsersService {
     //   target_user_id: user.id.toString(),
     //   event_type: 'view_profile',
     // });
-    if (currentUserId && currentUserId !== user.id.toString()) {
-      this.recommendService
-        .logEvent({
-          actor_user_id: currentUserId,
-          target_user_id: user.id.toString(),
-          event_type: 'view_profile',
-          timestamp: new Date().toISOString(),
-          session_id: token,
-        })
-        .catch(err => {
-          console.error('[Recommend] logEvent failed', err);
-        });
-    }
+    // if (currentUserId && currentUserId !== user.id.toString()) {
+    //   this.recommendService
+    //     .logEvent({
+    //       actor_user_id: currentUserId,
+    //       target_user_id: user.id.toString(),
+    //       event_type: 'view_profile',
+    //       timestamp: new Date().toISOString(),
+    //       session_id: token,
+    //     })
+    //     .catch(err => {
+    //       console.error('[Recommend] logEvent failed', err);
+    //     });
+    // }
     return {
       success: true,
       message: 'User fetched successfully',

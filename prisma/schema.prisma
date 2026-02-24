@@ -8,25 +8,44 @@ datasource db {
 }
 
 model conversations {
-  id                        BigInt                      @id @default(autoincrement())
-  type                      ConversationType            @default(private)
-  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  id         BigInt           @id @default(autoincrement())
+  type       ConversationType @default(private)
+
+  // metadata cho group
+  name       String?          // null nếu private
+  avatar     String?
+  created_by BigInt?          // user tạo group
+
+  last_message    String?
+  last_sender_id  BigInt?
+  last_message_at DateTime?        @db.Timestamp(6)
+
+  created_at DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at DateTime?        @updatedAt @db.Timestamp(6)
+
   conversation_participants conversation_participants[]
   messages                  messages[]
+
+  @@index([updated_at(sort: Desc)])
+  @@index([last_message_at(sort: Desc)])
 }
 
 model conversation_participants {
-  id              BigInt    @id @default(autoincrement())
+  id              BigInt @id @default(autoincrement())
   conversation_id BigInt
   user_id         BigInt
-  joined_at       DateTime? @default(now()) @db.Timestamp(6)
 
-  conversations conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role            ConversationRole @default(member)
+  joined_at       DateTime? @default(now()) @db.Timestamp(6)
+  unread_count    Int       @default(0)
+  last_seen_message_id BigInt?
+
+  conversation conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([conversation_id, user_id])
-  @@index([conversation_id], map: "idx_conversation_participants_conversation")
-  @@index([user_id], map: "idx_conversation_participants_user")
+  @@index([conversation_id])
+  @@index([user_id])
 }
 
 model follows {
@@ -46,8 +65,7 @@ model messages {
   content         String?
   type            MessageType   @default(text)
   created_at      DateTime?     @default(now()) @db.Timestamp(6)
-  seen_at         DateTime?     @db.Timestamp(6)
-  conversations          conversations          @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  conversation           conversations          @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                  users                  @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   message_attachments    message_attachments[]
 
@@ -142,6 +160,12 @@ model story_views {
 enum ConversationType {
   private
   group
+}
+
+enum ConversationRole {
+  owner
+  admin
+  member
 }
 
 enum MessageType {
