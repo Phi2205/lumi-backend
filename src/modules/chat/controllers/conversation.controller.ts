@@ -12,7 +12,7 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({ summary: 'Lấy các cuộc trò chuyện của người dùng (có phân trang)' })
@@ -37,11 +37,13 @@ export class ConversationController {
   @ApiOperation({ summary: 'Lấy lịch sử tin nhắn của một cuộc trò chuyện' })
   @ApiResponse({ status: 200, description: 'Danh sách tin nhắn' })
   async getMessages(
+    @Req() req: any,
     @Param('id') id: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit: number = 50,
   ) {
-    return this.messageService.getMessages(id, cursor, Number(limit));
+    const userId = req.user.userId;
+    return this.messageService.getMessages(id, userId, cursor, Number(limit));
   }
 
   @Post('private/:recipientId')

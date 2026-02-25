@@ -7,7 +7,7 @@ export class ConversationService {
   constructor(
     private conversationRepository: ConversationRepository,
     private conversationParticipantsRepository: ConversationParticipantsRepository,
-  ) {}
+  ) { }
 
   /**
    * Lấy tất cả conversations mà user tham gia
@@ -186,5 +186,28 @@ export class ConversationService {
         })),
       },
     };
+  }
+
+  /**
+   * Đánh dấu cuộc trò chuyện là đã đọc
+   */
+  async markRead(conversationId: string, userId: string, lastMessageId: string) {
+    try {
+      await this.conversationParticipantsRepository.markAsRead(
+        conversationId,
+        userId,
+        lastMessageId,
+      );
+
+      return {
+        success: true,
+        message: 'Marked as read successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to mark as read',
+      };
+    }
   }
 }

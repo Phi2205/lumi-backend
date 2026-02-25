@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ConversationParticipantsRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Lấy danh sách conversations của user với phân trang
@@ -101,5 +101,23 @@ export class ConversationParticipantsRepository {
       },
     });
     return !!participant;
+  }
+
+  /**
+   * Cập nhật tin nhắn cuối cùng đã xem và reset unread_count
+   */
+  async markAsRead(conversationId: string | bigint, userId: string | bigint, lastMessageId: string | bigint) {
+    return this.prisma.conversation_participants.update({
+      where: {
+        conversation_id_user_id: {
+          conversation_id: BigInt(conversationId),
+          user_id: BigInt(userId),
+        },
+      },
+      data: {
+        last_seen_message_id: BigInt(lastMessageId),
+        unread_count: 0,
+      },
+    });
   }
 }

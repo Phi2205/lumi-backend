@@ -23,8 +23,7 @@ import { PostCommentService } from '../../posts/services/post-comment.service';
   },
 })
 export class SocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -37,7 +36,7 @@ export class SocketGateway
     private readonly messageService: MessageService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
-  ) {}
+  ) { }
 
   /**
    * Cấu hình socket server sau khi khởi tạo
@@ -93,7 +92,7 @@ export class SocketGateway
       // 1. Join vào room cá nhân của user
       socket.join(`user_${userId}`);
       socket.join(userId.toString()); // Hỗ trợ cả 2 định dạng room
-      
+
       this.logger.log(`User connected: ${userId} (Socket ID: ${socket.id})`);
 
       // 2. Join vào tất cả các room conversation của user này
@@ -112,7 +111,14 @@ export class SocketGateway
   }
 
   handleDisconnect(socket: Socket) {
-    this.logger.log(`Client disconnected: ${socket.id}`);
+    const user = socket.data.user;
+    const userId = user?.sub || user?.id;
+
+    if (userId && user.role !== 'guest') {
+      this.logger.log(`User disconnected: ${userId} (Socket ID: ${socket.id})`);
+    } else {
+      this.logger.log(`Guest disconnected (Socket ID: ${socket.id})`);
+    }
   }
 
   // ─── Chat Gateway Logic ──────────────────────────────────────────────────────
@@ -130,7 +136,7 @@ export class SocketGateway
 
     const senderId = (user.sub || user.id).toString();
     const roomName = `conversation_${payload.conversationId}`;
-    
+
     // Đảm bảo client đã join vào room conversation (đặc biệt cho conv mới tạo)
     client.join(roomName);
 
@@ -171,6 +177,43 @@ export class SocketGateway
       }
     } catch (error) {
       this.logger.error('Error handling send_message:', error);
+    }
+  }
+
+  @SubscribeMessage('mark_read')
+  async handleMarkRead(
+    @MessageBody() payload: { conversationId: string; lastMessageId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const user = client.data.user;
+    if (!user || user.role === 'guest') return;
+
+    const userId = (user.sub || user.id).toString();
+
+    try {
+      const result = await this.conversationService.markRead(
+        payload.conversationId,
+        userId,
+        payload.lastMessageId,
+      );
+
+      if (result.success) {
+        const roomName = `conversation_${payload.conversationId}`;
+
+        // Thông báo cho tất cả mọi người trong cuộc trò chuyện (bao gồm cả người gửi)
+        this.server.to(roomName).emit('user_read_message', {
+          conversation_id: payload.conversationId,
+          user_id: userId,
+          last_seen_message_id: payload.lastMessageId,
+        });
+        console.log('User read message:', {
+          conversation_id: payload.conversationId,
+          user_id: userId,
+          last_seen_message_id: payload.lastMessageId,
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error handling mark_read:', error);
     }
   }
 
