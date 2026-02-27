@@ -50,6 +50,7 @@ export class MessageService {
           where: { id: conversationIdBigInt },
           data: {
             last_message: content,
+            last_message_id: newMessage.id,
             last_sender_id: senderIdBigInt,
             last_message_at: new Date(),
             updated_at: new Date(),

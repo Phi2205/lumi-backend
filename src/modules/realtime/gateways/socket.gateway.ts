@@ -173,6 +173,8 @@ export class SocketGateway
           .emit('conversation_updated', {
             conversationId: payload.conversationId,
             lastMessage: messageData,
+            senderId,
+            message_id: messageData.id,
           });
       }
     } catch (error) {
