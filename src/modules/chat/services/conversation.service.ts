@@ -68,7 +68,7 @@ export class ConversationService {
           last_sender_id: c.last_sender_id?.toString(),
           last_message_at: c.last_message_at,
           updated_at: c.updated_at,
-          unread_count: c.unread_count || 0,
+          unread_count: c.conversation_participants.find((p: any) => p.users.id.toString() === userId.toString())?.unread_count || 0,
         })),
         pagination: {
           total: result.meta.total,
@@ -105,7 +105,7 @@ export class ConversationService {
   /**
    * Lấy chi tiết một conversation theo ID
    */
-  async getConversationById(conversationId: string) {
+  async getConversationById(conversationId: string, userId: string) {
     const c = await this.conversationRepository.findById(conversationId);
 
     if (!c) {
@@ -130,7 +130,9 @@ export class ConversationService {
           avatar_url: p.users.avatar_url,
           joined_at: p.joined_at,
           last_seen_message_id: p.last_seen_message_id?.toString(),
+          unread_count: p.unread_count,
         })),
+        unread_count: c.conversation_participants.find((p: any) => p.users.id.toString() === userId.toString())?.unread_count || 0,
         last_message: c.last_message,
         last_message_id: c.last_message_id?.toString(),
         last_sender_id: c.last_sender_id?.toString(),
@@ -167,7 +169,15 @@ export class ConversationService {
             username: p.users.username,
             name: p.users.name,
             avatar_url: p.users.avatar_url,
+            unread_count: p.unread_count,
+            joined_at: p.joined_at,
+            last_seen_message_id: p.last_seen_message_id?.toString(),
           })),
+          last_message: existing.last_message,
+          last_message_id: existing.last_message_id?.toString(),
+          last_sender_id: existing.last_sender_id?.toString(),
+          last_message_at: existing.last_message_at,
+          updated_at: existing.updated_at,
         },
       };
     }
@@ -186,7 +196,15 @@ export class ConversationService {
           username: p.users.username,
           name: p.users.name,
           avatar_url: p.users.avatar_url,
+          unread_count: p.unread_count,
+          joined_at: p.joined_at,
+          last_seen_message_id: p.last_seen_message_id?.toString(),
         })),
+        last_message: newConv.last_message,
+        last_message_id: newConv.last_message_id?.toString(),
+        last_sender_id: newConv.last_sender_id?.toString(),
+        last_message_at: newConv.last_message_at,
+        updated_at: newConv.updated_at,
       },
     };
   }

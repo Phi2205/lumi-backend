@@ -29,8 +29,8 @@ export class ConversationController {
   @Get(':id')
   @ApiOperation({ summary: 'Lấy chi tiết một cuộc trò chuyện' })
   @ApiResponse({ status: 200, description: 'Thông tin chi tiết cuộc trò chuyện' })
-  async getConversationById(@Param('id') id: string) {
-    return this.conversationService.getConversationById(id);
+  async getConversationById(@Param('id') id: string, @Req() req: any) {
+    return this.conversationService.getConversationById(id, req.user.userId);
   }
 
   @Get(':id/messages')
