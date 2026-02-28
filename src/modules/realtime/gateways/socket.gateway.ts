@@ -161,10 +161,10 @@ export class SocketGateway
       for (const p of participants) {
         const pId = p.userId.toString();
         // Không emit lại message qua user room cho người gửi (đã nhận qua room conversation)
-        if (pId !== senderId) {
-          // Gửi thông báo tin nhắn mới qua user room cá nhân của họ
-          this.server.to(`user_${pId}`).to(pId).emit('new_message', messageData);
-        }
+        // if (pId !== senderId) {
+        //   // Gửi thông báo tin nhắn mới qua user room cá nhân của họ
+        //   this.server.to(`user_${pId}`).to(pId).emit('new_message', messageData);
+        // }
 
         // Cập nhật danh sách hội thoại (unread count, last message, etc.)
         this.server
