@@ -120,4 +120,23 @@ export class ConversationParticipantsRepository {
       },
     });
   }
+
+  /**
+   * Lấy last_seen_message_id của người dùng trong cuộc hội thoại
+   */
+  async getLastSeenMessageId(conversationId: string | bigint, userId: string | bigint) {
+    const participant = await this.prisma.conversation_participants.findUnique({
+      where: {
+        conversation_id_user_id: {
+          conversation_id: BigInt(conversationId),
+          user_id: BigInt(userId),
+        },
+      },
+      select: {
+        last_seen_message_id: true,
+      },
+    });
+
+    return participant?.last_seen_message_id || BigInt(0);
+  }
 }

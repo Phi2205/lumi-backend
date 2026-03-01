@@ -12,9 +12,11 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Inject, forwardRef, Logger } from '@nestjs/common';
 import { RealtimeService } from '../realtime.service';
+import { PresenceService } from '../services/presence.service';
 import { ConversationService } from '../../chat/services/conversation.service';
 import { MessageService } from '../../chat/services/message.service';
 import { PostCommentService } from '../../posts/services/post-comment.service';
+import { FriendsService } from '../../friends/friends.service';
 
 @WebSocketGateway({
   cors: {
@@ -32,8 +34,10 @@ export class SocketGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly realtimeService: RealtimeService,
+    private readonly presenceService: PresenceService,
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
+    private readonly friendsService: FriendsService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
   ) { }
@@ -105,6 +109,14 @@ export class SocketGateway
       } catch (error) {
         this.logger.error('Error joining conversation rooms:', error);
       }
+
+      // 3. Mark user as online in Redis
+      const isFirst = await this.presenceService.markOnline(userId.toString(), socket.id);
+
+      // 4. Thông báo cho những người liên quan (trong cùng hội thoại)
+      if (isFirst) {
+        await this.notifyStatusChange(userId.toString(), true);
+      }
     } else {
       this.logger.log(`Guest connected (Socket ID: ${socket.id})`);
     }
@@ -116,6 +128,13 @@ export class SocketGateway
 
     if (userId && user.role !== 'guest') {
       this.logger.log(`User disconnected: ${userId} (Socket ID: ${socket.id})`);
+
+      // Mark as offline in Redis
+      this.presenceService.markOffline(userId.toString(), socket.id).then(async (isFullyOffline) => {
+        if (isFullyOffline) {
+          await this.notifyStatusChange(userId.toString(), false);
+        }
+      });
     } else {
       this.logger.log(`Guest disconnected (Socket ID: ${socket.id})`);
     }
@@ -125,7 +144,11 @@ export class SocketGateway
 
   @SubscribeMessage('send_message')
   async handleSendMessage(
-    @MessageBody() payload: { conversationId: string; content: string },
+    @MessageBody() payload: {
+      conversationId: string;
+      content?: string;
+      attachments?: { url: string; type: string }[];
+    },
     @ConnectedSocket() client: Socket,
   ) {
     const user = client.data.user;
@@ -139,12 +162,14 @@ export class SocketGateway
 
     // Đảm bảo client đã join vào room conversation (đặc biệt cho conv mới tạo)
     client.join(roomName);
+    console.log("payload", payload);
 
     try {
       const resultMessage = await this.messageService.sendMessage({
         conversationId: payload.conversationId,
         senderId: senderId,
         content: payload.content,
+        attachments: payload.attachments,
       });
 
       if (!resultMessage.success) return;
@@ -243,6 +268,53 @@ export class SocketGateway
   @SubscribeMessage('new_post')
   handleNewPost(@MessageBody() data: any) {
     this.logger.log('New post socket event received:', data);
+  }
+
+  @SubscribeMessage('heartbeat')
+  async handleHeartbeat(@ConnectedSocket() client: Socket) {
+    const user = client.data.user;
+    if (!user || user.role === 'guest') return;
+
+    const userId = (user.sub || user.id).toString();
+    await this.presenceService.handleHeartbeat(userId);
+
+    // Trả về ack cho client
+    client.emit('heartbeat_ack', { status: 'online', timestamp: new Date() });
+  }
+
+  /**
+   * Thông báo trạng thái online/offline cho tất cả participants trong các cuộc trò chuyện của user
+   */
+  private async notifyStatusChange(userId: string, isOnline: boolean) {
+    try {
+      const lastOnline = isOnline ? new Date().toISOString() : await this.presenceService.getLastOnline(userId);
+
+      // Lấy danh sách conversations để biết cần notify vào room nào
+      const result = await this.conversationService.getUserConversations(userId);
+      const conversations = result.data || [];
+
+      const payload = {
+        userId,
+        is_online: isOnline,
+        last_online: lastOnline
+      };
+
+      for (const conv of conversations) {
+        const roomName = `conversation_${conv.id}`;
+        this.server.to(roomName).emit('user_status_changed', payload);
+      }
+
+      // Thông báo cho danh sách bạn bè qua room cá nhân của họ
+      const friendIds = await this.friendsService.getFriendIds(userId);
+      for (const friendId of friendIds) {
+        const pId = friendId.toString();
+        this.server.to(`user_${pId}`).to(pId).emit('user_status_changed', payload);
+      }
+
+      this.logger.debug(`Notified status change for user ${userId}: ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+    } catch (error) {
+      this.logger.error(`Error notifying status change: ${error.message}`);
+    }
   }
 
   /**

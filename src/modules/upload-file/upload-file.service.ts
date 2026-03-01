@@ -14,7 +14,7 @@ export class UploadFileService {
 
   private async uploadSingle(
     file: Express.Multer.File,
-  ): Promise<{ url: string; type: string }> {
+  ): Promise<{ public_id: string; type: string }> {
     const isVideo = file.mimetype.startsWith('video/');
     const isImage = file.mimetype.startsWith('image/');
     const resourceType = isVideo ? 'video' : isImage ? 'image' : 'raw';
@@ -30,7 +30,7 @@ export class UploadFileService {
         (error, result) => {
           if (error) return reject(error);
           resolve({
-            url: result!.secure_url,
+            public_id: result!.public_id,
             type: fileType,
           });
         },
