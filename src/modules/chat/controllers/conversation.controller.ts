@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Req, UseGuards, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConversationService } from '../services/conversation.service';
@@ -54,5 +54,31 @@ export class ConversationController {
   ) {
     const userId = req.user.userId;
     return this.conversationService.getOrCreatePrivateConversation(userId, recipientId);
+  }
+
+  @Get(':id/media')
+  @ApiOperation({ summary: 'Lấy danh sách media (ảnh/video) của một cuộc trò chuyện' })
+  @ApiResponse({ status: 200, description: 'Danh sách media' })
+  async getMedia(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.messageService.getConversationMedia(id, cursor, Number(limit));
+  }
+
+  @Post('group')
+  @ApiOperation({ summary: 'Tạo cuộc trò chuyện nhóm' })
+  async createGroupConversation(
+    @Req() req: any,
+    @Body() body: { userIds: string[]; name?: string; avatar?: string },
+  ) {
+    const userId = req.user.userId;
+    return this.conversationService.createGroupConversation(
+      userId,
+      body.userIds,
+      body.name,
+      body.avatar,
+    );
   }
 }

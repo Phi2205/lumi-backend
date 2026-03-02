@@ -61,6 +61,8 @@ export class ConversationService {
           id: c.id.toString(),
           type: c.type,
           created_at: c.created_at,
+          name: c.name,
+          avatar_url: c.avatar_url,
           participants: await Promise.all(c.conversation_participants.map(async (p: any) => ({
             id: p.users.id.toString(),
             username: p.users.username,
@@ -246,5 +248,47 @@ export class ConversationService {
         message: 'Failed to mark as read',
       };
     }
+  }
+
+  /**
+   * Tạo cuộc trò chuyện nhóm
+   */
+  async createGroupConversation(creatorId: string, userIds: string[], name?: string, avatar?: string) {
+    if (!userIds || userIds.length === 0) {
+      return {
+        success: false,
+        message: 'Group must have at least one other participant',
+        data: null,
+      };
+    }
+
+    const newGroup = await this.conversationRepository.createGroupConversation(creatorId, userIds, name, avatar);
+
+    return {
+      success: true,
+      message: 'Created group conversation successfully',
+      data: {
+        id: newGroup.id.toString(),
+        type: newGroup.type,
+        name: newGroup.name,
+        avatar: newGroup.avatar,
+        participants: await Promise.all(newGroup.conversation_participants.map(async (p: any) => ({
+          id: p.users.id.toString(),
+          username: p.users.username,
+          name: p.users.name,
+          avatar_url: p.users.avatar_url,
+          unread_count: p.unread_count,
+          joined_at: p.joined_at,
+          last_seen_message_id: p.last_seen_message_id?.toString(),
+          is_online: await this.presenceService.isOnline(p.users.id.toString()),
+          last_online: await this.presenceService.getLastOnline(p.users.id.toString()),
+        }))),
+        last_message: newGroup.last_message,
+        last_message_id: newGroup.last_message_id?.toString(),
+        last_sender_id: newGroup.last_sender_id?.toString(),
+        last_message_at: newGroup.last_message_at,
+        updated_at: newGroup.updated_at,
+      },
+    };
   }
 }

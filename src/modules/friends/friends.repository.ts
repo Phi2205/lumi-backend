@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class FriendsRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Kiểm tra 2 users đã là bạn chưa
@@ -73,6 +73,7 @@ export class FriendsRepository {
           select: {
             id: true,
             username: true,
+            name: true,
             email: true,
             avatar_url: true,
             bio: true,
@@ -114,6 +115,7 @@ export class FriendsRepository {
           select: {
             id: true,
             username: true,
+            name: true,
             email: true,
             avatar_url: true,
             bio: true,

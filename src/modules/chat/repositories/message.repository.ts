@@ -154,4 +154,36 @@ export class MessageRepository {
       },
     );
   }
+
+  /**
+   * Lấy danh sách media (ảnh/video) của cuộc trò chuyện
+   */
+  async getConversationMedia(
+    conversationId: string,
+    cursor?: string,
+    limit: number = 20,
+  ) {
+    return this.prisma.message_attachments.findMany({
+      take: limit + 1,
+      where: {
+        messages: {
+          conversation_id: BigInt(conversationId),
+        },
+        file_type: {
+          in: ['image', 'video'],
+        },
+      },
+      cursor: cursor ? { id: BigInt(cursor) } : undefined,
+      skip: cursor ? 1 : 0,
+      orderBy: { id: 'desc' },
+      include: {
+        messages: {
+          select: {
+            created_at: true,
+            sender_id: true,
+          },
+        },
+      },
+    });
+  }
 }

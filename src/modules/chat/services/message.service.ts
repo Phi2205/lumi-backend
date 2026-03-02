@@ -98,4 +98,46 @@ export class MessageService {
       },
     };
   }
+
+  /**
+   * Lấy danh sách media (ảnh/video) của cuộc trò chuyện có phân trang
+   */
+  async getConversationMedia(
+    conversationId: string,
+    cursor?: string,
+    limit: number = 20,
+  ) {
+    const items = await this.messageRepository.getConversationMedia(
+      conversationId,
+      cursor,
+      limit,
+    );
+
+    const hasMore = items.length > limit;
+    let nextCursor: string | null = null;
+
+    if (hasMore) {
+      const nextItem = items.pop();
+      nextCursor = nextItem?.id.toString() || null;
+    }
+
+    return {
+      success: true,
+      message: 'Get conversation media successfully',
+      data: {
+        items: items.map((att) => ({
+          id: att.id.toString(),
+          url: att.url,
+          file_type: att.file_type,
+          width: att.width,
+          height: att.height,
+          file_size: att.file_size,
+          created_at: att.messages.created_at,
+          sender_id: att.messages.sender_id.toString(),
+        })),
+        nextCursor,
+        hasMore,
+      },
+    };
+  }
 }
