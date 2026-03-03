@@ -186,4 +186,151 @@ export class MessageRepository {
       },
     });
   }
+
+  /**
+   * Tìm kiếm tin nhắn sử dụng Full-Text Search
+   */
+  async searchMessages(conversationId: string, search: string, limit: number = 20, offset: number = 0) {
+    const conversationIdBigInt = BigInt(conversationId);
+
+    return this.prisma.$queryRaw`
+      SELECT 
+        m.*,
+        u.username,
+        u.name,
+        u.avatar_url,
+        count(*) OVER() AS full_count
+      FROM "messages" m
+      INNER JOIN "users" u ON m.sender_id = u.id
+      WHERE m.conversation_id = ${conversationIdBigInt}
+      AND to_tsvector('simple', m.content) @@ plainto_tsquery(${search})
+      ORDER BY m.created_at DESC
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `;
+  }
+
+  /**
+   * Lấy tin nhắn xung quanh một message_id (10 trước, 10 sau)
+   */
+  async getMessagesAround(conversationId: string, messageId: string, limit: number = 10) {
+    const messageIdBigInt = BigInt(messageId);
+    const conversationIdBigInt = BigInt(conversationId);
+
+    // 1. Lấy tin nhắn target
+    const targetMessage = await this.prisma.messages.findUnique({
+      where: { id: messageIdBigInt },
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        message_attachments: true,
+      },
+    });
+
+    if (!targetMessage) return { target: null, before: [], after: [] };
+
+    // 2. Lấy tin nhắn trước (cũ hơn - lùi về quá khứ)
+    const before = await this.prisma.messages.findMany({
+      where: {
+        conversation_id: conversationIdBigInt,
+        id: { lt: messageIdBigInt },
+      },
+      orderBy: { id: 'desc' },
+      take: limit + 1,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        message_attachments: true,
+      },
+    });
+
+    // 3. Lấy tin nhắn sau (mới hơn - tiến tới tương lai)
+    const after = await this.prisma.messages.findMany({
+      where: {
+        conversation_id: conversationIdBigInt,
+        id: { gt: messageIdBigInt },
+      },
+      orderBy: { id: 'asc' },
+      take: limit + 1,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        message_attachments: true,
+      },
+    });
+
+    return {
+      target: targetMessage,
+      before: before.reverse(), // Đảo lại để theo thứ tự thời gian
+      after: after,
+    };
+  }
+
+  /**
+   * Lấy tin nhắn cũ hơn một cursor
+   */
+  async getMessagesBefore(conversationId: string, cursor: string, limit: number = 20) {
+    return this.prisma.messages.findMany({
+      where: {
+        conversation_id: BigInt(conversationId),
+        id: { lt: BigInt(cursor) },
+      },
+      orderBy: { id: 'desc' },
+      take: limit,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        message_attachments: true,
+      },
+    });
+  }
+
+  /**
+   * Lấy tin nhắn mới hơn một cursor
+   */
+  async getMessagesAfter(conversationId: string, cursor: string, limit: number = 20) {
+    return this.prisma.messages.findMany({
+      where: {
+        conversation_id: BigInt(conversationId),
+        id: { gt: BigInt(cursor) },
+      },
+      orderBy: { id: 'asc' },
+      take: limit,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        message_attachments: true,
+      },
+    });
+  }
 }

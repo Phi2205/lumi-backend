@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "extendedIndexes"]
 }
 
 datasource db {
@@ -63,8 +64,7 @@ model messages {
   conversation        conversations         @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users               users                 @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([conversation_id], map: "idx_messages_conversation")
-  @@index([created_at(sort: Desc)], map: "idx_messages_created_at")
+  @@index([conversation_id, created_at(sort: Desc)], map: "idx_messages_conv_created")
 }
 
 model message_attachments {

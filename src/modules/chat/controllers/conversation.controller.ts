@@ -67,6 +67,61 @@ export class ConversationController {
     return this.messageService.getConversationMedia(id, cursor, Number(limit));
   }
 
+  @Get(':id/messages/search')
+  @ApiOperation({ summary: 'Tìm kiếm tin nhắn trong cuộc trò chuyện' })
+  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn tìm thấy' })
+  async searchMessages(
+    @Param('id') id: string,
+    @Query('query') query: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    const offset = (Number(page) - 1) * Number(limit);
+    return this.messageService.searchMessages(
+      id,
+      query,
+      Number(limit),
+      offset,
+    );
+  }
+
+  @Get(':id/messages/:messageId/around')
+  @ApiOperation({ summary: 'Lấy tin nhắn xung quanh một tin nhắn cụ thể (10 trước, 10 sau)' })
+  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn bao gồm context' })
+  async getMessagesAround(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.messageService.getMessagesAround(id, messageId, userId, Number(limit));
+  }
+
+  @Get(':id/messages/older')
+  @ApiOperation({ summary: 'Lấy tin nhắn cũ hơn cursor (Load Older)' })
+  async getOlderMessages(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('cursor') cursor: string,
+    @Query('limit') limit: number = 20,
+  ) {
+    const userId = req.user.userId;
+    return this.messageService.getOlderMessages(id, cursor, userId, Number(limit));
+  }
+
+  @Get(':id/messages/newer')
+  @ApiOperation({ summary: 'Lấy tin nhắn mới hơn cursor (Load Newer)' })
+  async getNewerMessages(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('cursor') cursor: string,
+    @Query('limit') limit: number = 20,
+  ) {
+    const userId = req.user.userId;
+    return this.messageService.getNewerMessages(id, cursor, userId, Number(limit));
+  }
+
   @Post('group')
   @ApiOperation({ summary: 'Tạo cuộc trò chuyện nhóm' })
   async createGroupConversation(
