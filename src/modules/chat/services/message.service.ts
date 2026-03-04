@@ -224,16 +224,14 @@ export class MessageService {
 
     const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(conversationId, userId);
 
-    // Xác định hasMore cho hướng Trên (Mới hơn) và Dưới (Cũ hơn)
-    const hasMoreAbove = after.length > limit; // "Trên" là phía tin nhắn mới hơn (ID lớn hơn)
-    const finalAfter = hasMoreAbove ? after.slice(0, limit) : after;
+    // Xác định hasMore cho hướng Trên (Cũ hơn) và Dưới (Mới hơn)
+    const hasMoreAbove = before.length > limit; // "Trên" là phía tin nhắn cũ hơn (ID nhỏ hơn)
+    const finalBefore = hasMoreAbove ? before.slice(1) : before;
 
-    const hasMoreBelow = before.length > limit; // "Dưới" là phía tin nhắn cũ hơn (ID nhỏ hơn)
-    const finalBefore = hasMoreBelow ? before.slice(1) : before;
+    const hasMoreBelow = after.length > limit; // "Dưới" là phía tin nhắn mới hơn (ID lớn hơn)
+    const finalAfter = hasMoreBelow ? after.slice(0, limit) : after;
 
     // Merge tin nhắn: [Mới nhất] -> [Target] -> [Cũ nhất]
-    // finalAfter là asc [133, 134], reversed -> [134, 133]
-    // finalBefore là asc (do repo reverse) [130, 131], reversed -> [131, 130]
     const allMessages = [...[...finalAfter].reverse(), target, ...[...finalBefore].reverse()];
 
     return {
