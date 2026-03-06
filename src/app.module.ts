@@ -14,6 +14,7 @@ import { CommonModule } from './common/common.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { RecommendModule } from './modules/recommend/recommend.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { UploadFileModule } from './modules/upload-file/upload-file.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     FriendsModule,
     RecommendModule,
     RealtimeModule,
+    UploadFileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

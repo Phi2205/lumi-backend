@@ -61,22 +61,26 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.login(dto);
     
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isSecure = isProduction || process.env.FORCE_SECURE_COOKIES === 'true';
+
     // Set tokens in HttpOnly cookies
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
     
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
     });
+
 
     // Return success and user info without tokens
     return {
@@ -92,18 +96,21 @@ export class AuthController {
   @Post('refresh')
   async refresh(@Req() req, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.refresh(req.user.refreshToken);
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isSecure = isProduction || process.env.FORCE_SECURE_COOKIES === 'true';
+
     // Set new tokens in HttpOnly cookies
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
@@ -148,18 +155,21 @@ export class AuthController {
   async verifyOTP(@Body() dto: VerifyOtpDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.auth.verifyOTP(dto);
     
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isSecure = isProduction || process.env.FORCE_SECURE_COOKIES === 'true';
+
     // Set tokens in HttpOnly cookies
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: isSecure,
+      sameSite: isSecure ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 

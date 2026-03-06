@@ -7,7 +7,7 @@ export class FriendsService {
   constructor(
     private friendsRepository: FriendsRepository,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   /**
    * Lấy danh sách bạn bè
@@ -22,6 +22,7 @@ export class FriendsService {
       data: friends.map((f) => ({
         id: f.friend.id.toString(),
         username: f.friend.username,
+        name: f.friend.name,
         email: f.friend.email,
         avatar_url: f.friend.avatar_url,
         bio: f.friend.bio,
@@ -51,6 +52,7 @@ export class FriendsService {
       data: {
         id: friendship.friend.id.toString(),
         username: friendship.friend.username,
+        name: friendship.friend.name,
         email: friendship.friend.email,
         avatar_url: friendship.friend.avatar_url,
         bio: friendship.friend.bio,

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef, Delete } from '@nestjs/common';
-import { CommentGateway } from 'src/modules/realtime/gateways/comment.gateway';
+import { SocketGateway } from 'src/modules/realtime/gateways/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -19,8 +19,8 @@ export class PostsController {
     private postService: PostService,
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
-    @Inject(forwardRef(() => CommentGateway))
-    private readonly commentGateway: CommentGateway,
+    @Inject(forwardRef(() => SocketGateway))
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
@@ -75,7 +75,7 @@ export class PostsController {
     const result = await this.postCommentService.deleteComment(commentId, userId);
 
     // Broadcast to realtime gateway
-    this.commentGateway.broadcastDeleteComment(id, commentId);
+    this.socketGateway.broadcastDeleteComment(id, commentId);
 
     return result;
   }
@@ -191,7 +191,7 @@ export class PostsController {
     });
 
     // Broadcast to realtime gateway
-    this.commentGateway.broadcastComment(postId, result.data);
+    this.socketGateway.broadcastComment(postId, result.data);
 
     return result;
   }

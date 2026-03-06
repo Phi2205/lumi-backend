@@ -2,17 +2,21 @@ import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RealtimeService } from './realtime.service';
-import { PostGateway } from './gateways/post.gateway';
-import { CommentGateway } from './gateways/comment.gateway';
-import { NotificationGateway } from './gateways/notification.gateway';
-import { ChatGateway } from './gateways/chat.gateway';
+import { PresenceService } from './services/presence.service';
+import { SocketGateway } from './gateways/socket.gateway';
 import { RedisIoAdapter } from './adapters/redis.adapter';
-import { PostsModule } from '../posts/posts.module'; // Import PostsModule
+import { PostsModule } from '../posts/posts.module';
+import { ChatModule } from '../chat/chat.module';
+import { FriendsModule } from '../friends/friends.module';
+import { RedisModule } from '../../redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule,
     forwardRef(() => PostsModule),
+    ChatModule,
+    FriendsModule,
+    RedisModule, // Added RedisModule
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -23,12 +27,10 @@ import { PostsModule } from '../posts/posts.module'; // Import PostsModule
   ],
   providers: [
     RealtimeService,
-    PostGateway,
-    CommentGateway,
-    NotificationGateway, // This gateway handles connection/auth
-    ChatGateway,
+    PresenceService, // Added PresenceService
+    SocketGateway,
     RedisIoAdapter,
   ],
-  exports: [RealtimeService, CommentGateway],
+  exports: [RealtimeService, PresenceService, SocketGateway],
 })
-export class RealtimeModule {}
+export class RealtimeModule { }
