@@ -200,8 +200,10 @@ model users {
   role                                UserRole                    @default(user)
   avatar_url                          String?
   bio                                 String?
+  birthday                            DateTime?                   @db.Date
   created_at                          DateTime?                   @default(now()) @db.Timestamp(6)
   name                                String                      @db.VarChar(100)
+  user_location                       user_locations?
   conversation_participants           conversation_participants[]
   follows_follows_follower_idTousers  follows[]                   @relation("follows_follower_idTousers")
   follows_follows_following_idTousers follows[]                   @relation("follows_following_idTousers")
@@ -215,6 +217,21 @@ model users {
   posts                               posts[]
   stories                             stories[]
   story_views                         story_views[]
+  reels                               reels[]
+  reel_likes                          reel_likes[]
+  reel_comments                       reel_comments[]
+}
+
+model user_locations {
+  id         BigInt    @id @default(autoincrement())
+  user_id    BigInt    @unique
+  lat        Float?
+  lng        Float?
+  place_name String?   @db.VarChar(255)
+  address    String?   @db.Text
+  place_id   String?   @db.VarChar(100)
+  updated_at DateTime? @updatedAt @db.Timestamp(6)
+  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 enum ConversationType {
@@ -243,4 +260,55 @@ enum FriendRequestStatus {
 enum UserRole {
   user
   admin
+}
+
+model reels {
+  id            BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  video_url     String    @db.Text
+  public_id     String    @db.VarChar(255)
+  thumbnail_url String?   @db.Text
+  thumbnail_id  String?   @db.VarChar(255)
+  caption       String?   @db.Text
+  music_name    String?   @db.VarChar(255)
+  duration      Int?
+  like_count    Int       @default(0)
+  comment_count Int       @default(0)
+  share_count   Int       @default(0)
+  view_count    Int       @default(0)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @updatedAt @db.Timestamp(6)
+  user          users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  reel_likes    reel_likes[]
+  reel_comments reel_comments[]
+
+  @@index([user_id])
+  @@index([created_at(sort: Desc)])
+}
+
+model reel_likes {
+  reel_id    BigInt
+  user_id    BigInt
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  reel       reels     @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([reel_id, user_id])
+}
+
+model reel_comments {
+  id             BigInt          @id @default(autoincrement())
+  reel_id        BigInt
+  user_id        BigInt
+  content        String          @db.Text
+  parent_id      BigInt?
+  depth          Int             @default(0)
+  created_at     DateTime?       @default(now()) @db.Timestamp(6)
+  parent_comment reel_comments?  @relation("ReelCommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies        reel_comments[] @relation("ReelCommentReplies")
+  reel           reels           @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user           users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([reel_id, created_at(sort: Desc)])
+  @@index([parent_id])
 }

@@ -40,4 +40,33 @@ export class UploadFileService {
       stream.pipe(uploadStream);
     });
   }
+
+  /**
+   * Tạo signature để frontend upload trực tiếp lên Cloudinary
+   */
+  async getUploadSignature(params: Record<string, any> = {}) {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const apiSecret = cloudinary.config().api_secret;
+    const apiKey = cloudinary.config().api_key;
+    const cloudName = cloudinary.config().cloud_name;
+
+    if (!apiSecret) {
+      throw new Error('Cloudinary config is missing api_secret');
+    }
+
+    const paramsToSign = {
+      ...params,
+      timestamp,
+    };
+    console.log("paramsToSign", paramsToSign);
+
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+
+    return {
+      signature,
+      timestamp,
+      api_key: apiKey,
+      cloud_name: cloudName,
+    };
+  }
 }
