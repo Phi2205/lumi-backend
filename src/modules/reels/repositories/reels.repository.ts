@@ -83,4 +83,18 @@ export class ReelsRepository {
             },
         });
     }
+
+    async incrementCommentCount(id: bigint | number | string, tx?: any) {
+        return (tx || this.prisma).reels.update({
+            where: { id: BigInt(id) },
+            data: { comment_count: { increment: 1 } },
+        });
+    }
+
+    async decrementCommentCount(id: bigint | number | string, tx?: any) {
+        return (tx || this.prisma).reels.update({
+            where: { id: BigInt(id) },
+            data: { comment_count: { decrement: 1 } },
+        });
+    }
 }
