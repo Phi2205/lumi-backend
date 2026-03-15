@@ -18,7 +18,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   // Tạo username từ name và đảm bảo unique
   private async generateUniqueUsername(name: string): Promise<string> {
@@ -90,7 +90,7 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
-    
+
     return {
       success: true,
       ...tokens,
@@ -101,6 +101,8 @@ export class AuthService {
         username: user.username,
         avatar_url: user.avatar_url,
         bio: user.bio,
+        user_location: user.user_location,
+        birthday: user.birthday,
       },
     };
   }
@@ -125,7 +127,7 @@ export class AuthService {
       if (!user) throw new UnauthorizedException();
 
       const tokens = await this.generateTokens(user.id, user.email);
-      
+
       return {
         ...tokens,
         user: {
@@ -134,6 +136,8 @@ export class AuthService {
           username: user.username,
           avatar_url: user.avatar_url,
           bio: user.bio,
+          user_location: user.user_location,
+          birthday: user.birthday,
         },
       };
     } catch {
@@ -145,9 +149,9 @@ export class AuthService {
   private async generateTokens(userId: bigint | number | string, email: string) {
     // Lấy user để có role
     const user = await this.authRepository.findById(userId);
-    
-    const payload = { 
-      sub: userId.toString(), 
+
+    const payload = {
+      sub: userId.toString(),
       email,
       role: (user as any)?.role || 'user' // Include role trong JWT payload
     };
@@ -175,12 +179,19 @@ export class AuthService {
     if (!user) throw new UnauthorizedException();
 
     return {
-      id: user.id.toString(),
-      email: user.email,
-      username: user.username,
-      avatar_url: user.avatar_url,
-      bio: user.bio,
-      created_at: user.created_at,
+      success: true,
+      message: 'User profile fetched successfully',
+      data: {
+        id: user.id.toString(),
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        bio: user.bio,
+        user_location: user.user_location,
+        birthday: user.birthday,
+        created_at: user.created_at,
+      },
     };
   }
 
@@ -244,6 +255,8 @@ export class AuthService {
         username: user.username,
         avatar_url: user.avatar_url,
         bio: user.bio,
+        user_location: user.user_location,
+        birthday: user.birthday,
       },
     };
   }

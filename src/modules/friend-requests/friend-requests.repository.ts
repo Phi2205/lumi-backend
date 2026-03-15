@@ -4,7 +4,7 @@ import { FriendRequestStatus } from '@prisma/client';
 
 @Injectable()
 export class FriendRequestsRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tìm friend request giữa 2 users
@@ -128,6 +128,8 @@ export class FriendRequestsRepository {
               email: true,
               avatar_url: true,
               bio: true,
+              user_location: true,
+              birthday: true,
             },
           },
         },

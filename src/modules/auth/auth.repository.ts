@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tìm user theo email
@@ -11,6 +11,7 @@ export class AuthRepository {
   async findByEmail(email: string) {
     return this.prisma.users.findUnique({
       where: { email },
+      include: { user_location: true },
     });
   }
 
@@ -20,6 +21,7 @@ export class AuthRepository {
   async findById(id: bigint | string | number) {
     return this.prisma.users.findUnique({
       where: { id: BigInt(id) },
+      include: { user_location: true },
     });
   }
 
@@ -29,6 +31,7 @@ export class AuthRepository {
   async findByUsername(username: string) {
     return this.prisma.users.findUnique({
       where: { username },
+      include: { user_location: true },
     });
   }
 
@@ -48,6 +51,7 @@ export class AuthRepository {
         name: data.name,
         password_hash: data.password_hash,
       },
+      include: { user_location: true },
     });
   }
 }

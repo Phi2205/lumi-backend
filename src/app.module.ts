@@ -15,6 +15,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { RecommendModule } from './modules/recommend/recommend.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { UploadFileModule } from './modules/upload-file/upload-file.module';
+import { ReelsModule } from './modules/reels/reels.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UploadFileModule } from './modules/upload-file/upload-file.module';
     RecommendModule,
     RealtimeModule,
     UploadFileModule,
+    ReelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

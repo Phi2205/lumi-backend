@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findByName(
     name: string | undefined,
@@ -12,11 +12,11 @@ export class UsersRepository {
   ) {
     const where = name
       ? {
-          name: {
-            contains: name,
-            mode: 'insensitive' as const,
-          },
-        }
+        name: {
+          contains: name,
+          mode: 'insensitive' as const,
+        },
+      }
       : undefined;
 
     const [data, total] = await Promise.all([
@@ -29,6 +29,8 @@ export class UsersRepository {
           email: true,
           avatar_url: true,
           bio: true,
+          user_location: true,
+          birthday: true,
           created_at: true,
         },
         orderBy: {
@@ -53,6 +55,37 @@ export class UsersRepository {
         email: true,
         avatar_url: true,
         bio: true,
+        user_location: true,
+        birthday: true,
+        created_at: true,
+      },
+    });
+  }
+
+  async updateProfile(userId: bigint | string, data: { bio?: string; birthday?: Date; user_location?: any }) {
+    const { user_location, ...userData } = data;
+    return this.prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: {
+        ...userData,
+        ...(user_location ? {
+          user_location: {
+            upsert: {
+              create: user_location,
+              update: user_location,
+            }
+          }
+        } : {})
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        bio: true,
+        user_location: true,
+        birthday: true,
         created_at: true,
       },
     });

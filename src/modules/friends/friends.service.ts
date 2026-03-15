@@ -115,4 +115,67 @@ export class FriendsService {
   async getFriendIds(userId: string) {
     return this.friendsRepository.getFriendIds(userId);
   }
+
+  /**
+   * Lấy danh sách bạn chung
+   */
+  async getMutualFriends(userId: string, targetId: string) {
+    const mutualFriends = await this.friendsRepository.getMutualFriends(userId, targetId);
+
+    return {
+      success: true,
+      data: mutualFriends.map((user) => ({
+        id: user.id.toString(),
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        avatar_url: user.avatar_url,
+        bio: user.bio,
+      })),
+    };
+  }
+
+  /**
+   * Lấy danh sách bạn bè của một user bất kỳ
+   */
+  async getFriendsOfUser(viewerId: string, targetId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    // Nếu viewer xem danh sách của chính mình, gọi hàm cũ cho nhanh
+    if (viewerId === targetId) {
+      return this.getFriendsList(targetId, page, limit);
+    }
+
+    const friends = await this.friendsRepository.getFriendsWithMutualPriority(viewerId, targetId, skip, limit);
+    const total = await this.friendsRepository.countFriends(targetId);
+
+    return {
+      success: true,
+      data: friends,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Đếm số lượng bạn bè và bạn chung
+   */
+  async getFriendsAndMutualCount(viewerId: string, targetId: string) {
+    const [totalFriends, mutualFriends] = await Promise.all([
+      this.friendsRepository.countFriends(targetId),
+      this.friendsRepository.countMutualFriends(viewerId, targetId),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        total_friends: totalFriends,
+        mutual_friends: mutualFriends,
+      },
+    };
+  }
 }

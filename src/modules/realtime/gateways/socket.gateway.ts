@@ -330,4 +330,35 @@ export class SocketGateway
       comment_id: commentId,
     });
   }
+
+  // ─── Reel / Comment Gateway Logic ───────────────────────────────────────────
+
+  @SubscribeMessage('join_reel')
+  handleJoinReel(
+    @MessageBody() data: { reelId: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    socket.join(`reel:${data.reelId}`);
+    this.logger.log(`Socket ${socket.id} joined reel room: reel:${data.reelId}`);
+  }
+
+  @SubscribeMessage('leave_reel')
+  handleLeaveReel(
+    @MessageBody() data: { reelId: string },
+    @ConnectedSocket() socket: Socket,
+  ) {
+    socket.leave(`reel:${data.reelId}`);
+    this.logger.log(`Socket ${socket.id} left reel room: reel:${data.reelId}`);
+  }
+
+  broadcastReelComment(reelId: string, comment: any) {
+    this.server.to(`reel:${reelId}`).emit('new_reel_comment', comment);
+  }
+
+  broadcastDeleteReelComment(reelId: string, commentId: string) {
+    this.server.to(`reel:${reelId}`).emit('delete_reel_comment', {
+      reel_id: reelId,
+      comment_id: commentId,
+    });
+  }
 }
