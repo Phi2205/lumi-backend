@@ -11,7 +11,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { StoriesService } from './stories.service';
 import { cloudinaryStorage } from 'src/config/multer.config';
@@ -46,7 +53,10 @@ export class StoriesController {
       properties: {
         id: { type: 'string', example: '1' },
         user_id: { type: 'string', example: '1' },
-        media_url: { type: 'string', example: 'https://res.cloudinary.com/...' },
+        media_url: {
+          type: 'string',
+          example: 'https://res.cloudinary.com/...',
+        },
         media_type: { type: 'string', example: 'image' },
         expires_at: { type: 'string', format: 'date-time' },
         created_at: { type: 'string', format: 'date-time' },
@@ -57,7 +67,8 @@ export class StoriesController {
   @Post()
   @UseInterceptors(FileInterceptor('file', { storage: cloudinaryStorage }))
   async createStory(
-    @UploadedFile() file: Express.Multer.File & { url?: string; public_id?: string },
+    @UploadedFile()
+    file: Express.Multer.File & { url?: string; public_id?: string },
     @Req() req: any,
   ) {
     if (!file || !file.url) {
@@ -67,7 +78,11 @@ export class StoriesController {
     // Determine media type from mimetype
     const mediaType = file.mimetype.startsWith('video') ? 'video' : 'image';
 
-    return this.storiesService.createStory(req.user.userId, file.public_id, mediaType);
+    return this.storiesService.createStory(
+      req.user.userId,
+      file.public_id,
+      mediaType,
+    );
   }
 
   @ApiOperation({ summary: 'Get all stories of current user' })
@@ -94,7 +109,9 @@ export class StoriesController {
     return this.storiesService.getUserStories(req.user.userId);
   }
 
-  @ApiOperation({ summary: 'Get friends with active stories (Stories Ring) with pagination' })
+  @ApiOperation({
+    summary: 'Get friends with active stories (Stories Ring) with pagination',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of friends who have active stories',
@@ -116,7 +133,11 @@ export class StoriesController {
                   username: { type: 'string' },
                   user_avatar: { type: 'string', nullable: true },
                   story_count: { type: 'number' },
-                  latest_story_time: { type: 'string', format: 'date-time', nullable: true },
+                  latest_story_time: {
+                    type: 'string',
+                    format: 'date-time',
+                    nullable: true,
+                  },
                 },
               },
             },
@@ -142,7 +163,11 @@ export class StoriesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.storiesService.getFriendsWithStories(req.user.userId, page, limit);
+    return this.storiesService.getFriendsWithStories(
+      req.user.userId,
+      page,
+      limit,
+    );
   }
 
   @ApiOperation({ summary: 'Get stories of a specific user' })

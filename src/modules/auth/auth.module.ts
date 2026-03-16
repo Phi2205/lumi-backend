@@ -15,7 +15,7 @@ import { EmailModule } from 'src/email/email.module';
     RedisModule,
     EmailModule,
     JwtModule.register({
-      secret: (process.env.JWT_SECRET || 'dev-secret') as string,
+      secret: process.env.JWT_SECRET || 'dev-secret',
       signOptions: {
         expiresIn: (process.env.JWT_EXPIRES_IN as any) || '15m',
       },

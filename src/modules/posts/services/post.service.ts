@@ -108,10 +108,9 @@ export class PostService {
     }
 
     // Check if user has liked this post
-    const likedPosts = await this.postLikeRepository.findLikesForPosts(
-      userId,
-      [post.id],
-    );
+    const likedPosts = await this.postLikeRepository.findLikesForPosts(userId, [
+      post.id,
+    ]);
     const hasLiked = likedPosts.length > 0;
 
     return {
@@ -153,12 +152,14 @@ export class PostService {
                 name: (post as any).original_post.users.name,
                 avatar_url: (post as any).original_post.users.avatar_url,
               },
-              post_media: (post as any).original_post.post_media.map((m: any) => ({
-                id: m.id.toString(),
-                media_url: m.media_url,
-                media_type: m.media_type,
-                order: m.order,
-              })),
+              post_media: (post as any).original_post.post_media.map(
+                (m: any) => ({
+                  id: m.id.toString(),
+                  media_url: m.media_url,
+                  media_type: m.media_type,
+                  order: m.order,
+                }),
+              ),
             }
           : null,
       },
@@ -246,12 +247,14 @@ export class PostService {
                   name: (post as any).original_post.users.name,
                   avatar_url: (post as any).original_post.users.avatar_url,
                 },
-                post_media: (post as any).original_post.post_media.map((m: any) => ({
-                  id: m.id.toString(),
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order,
-                })),
+                post_media: (post as any).original_post.post_media.map(
+                  (m: any) => ({
+                    id: m.id.toString(),
+                    media_url: m.media_url,
+                    media_type: m.media_type,
+                    order: m.order,
+                  }),
+                ),
               }
             : null,
         })),
@@ -276,7 +279,9 @@ export class PostService {
     content?: string | null;
   }) {
     // Kiểm tra bài gốc tồn tại
-    const originalPost = await this.postRepository.findById(data.original_post_id);
+    const originalPost = await this.postRepository.findById(
+      data.original_post_id,
+    );
     if (!originalPost) {
       throw new Error(`Post ${data.original_post_id} not found`);
     }

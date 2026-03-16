@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MessageRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Tạo tin nhắn mới
@@ -23,11 +23,11 @@ export class MessageRepository {
         type: (data.type as any) || 'text',
         message_attachments: data.attachments?.length
           ? {
-            create: data.attachments.map((att) => ({
-              url: att.url,
-              file_type: att.type,
-            })),
-          }
+              create: data.attachments.map((att) => ({
+                url: att.url,
+                file_type: att.type,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -71,9 +71,9 @@ export class MessageRepository {
       take: limit,
       ...(cursor
         ? {
-          cursor: { id: BigInt(cursor) },
-          skip: 1,
-        }
+            cursor: { id: BigInt(cursor) },
+            skip: 1,
+          }
         : {}),
     });
   }
@@ -100,14 +100,16 @@ export class MessageRepository {
             conversation_id: conversationIdBigInt,
             sender_id: senderIdBigInt,
             content: content || '',
-            type: (type as any) || (attachments?.length ? attachments[0].type : 'text'),
+            type:
+              (type as any) ||
+              (attachments?.length ? attachments[0].type : 'text'),
             message_attachments: attachments?.length
               ? {
-                create: attachments.map((att) => ({
-                  url: att.url,
-                  file_type: att.type,
-                })),
-              }
+                  create: attachments.map((att) => ({
+                    url: att.url,
+                    file_type: att.type,
+                  })),
+                }
               : undefined,
           },
           include: {
@@ -127,7 +129,9 @@ export class MessageRepository {
         await tx.conversations.update({
           where: { id: conversationIdBigInt },
           data: {
-            last_message: content || (attachments?.length ? `[${attachments[0].type}]` : ''),
+            last_message:
+              content ||
+              (attachments?.length ? `[${attachments[0].type}]` : ''),
             last_message_id: newMessage.id,
             last_sender_id: senderIdBigInt,
             last_message_at: new Date(),
@@ -190,7 +194,12 @@ export class MessageRepository {
   /**
    * Tìm kiếm tin nhắn sử dụng Full-Text Search
    */
-  async searchMessages(conversationId: string, search: string, limit: number = 20, offset: number = 0) {
+  async searchMessages(
+    conversationId: string,
+    search: string,
+    limit: number = 20,
+    offset: number = 0,
+  ) {
     const conversationIdBigInt = BigInt(conversationId);
 
     return this.prisma.$queryRaw`
@@ -213,7 +222,11 @@ export class MessageRepository {
   /**
    * Lấy tin nhắn xung quanh một message_id (10 trước, 10 sau)
    */
-  async getMessagesAround(conversationId: string, messageId: string, limit: number = 10) {
+  async getMessagesAround(
+    conversationId: string,
+    messageId: string,
+    limit: number = 10,
+  ) {
     const messageIdBigInt = BigInt(messageId);
     const conversationIdBigInt = BigInt(conversationId);
 
@@ -287,7 +300,11 @@ export class MessageRepository {
   /**
    * Lấy tin nhắn cũ hơn một cursor
    */
-  async getMessagesBefore(conversationId: string, cursor: string, limit: number = 20) {
+  async getMessagesBefore(
+    conversationId: string,
+    cursor: string,
+    limit: number = 20,
+  ) {
     return this.prisma.messages.findMany({
       where: {
         conversation_id: BigInt(conversationId),
@@ -312,7 +329,11 @@ export class MessageRepository {
   /**
    * Lấy tin nhắn mới hơn một cursor
    */
-  async getMessagesAfter(conversationId: string, cursor: string, limit: number = 20) {
+  async getMessagesAfter(
+    conversationId: string,
+    cursor: string,
+    limit: number = 20,
+  ) {
     return this.prisma.messages.findMany({
       where: {
         conversation_id: BigInt(conversationId),

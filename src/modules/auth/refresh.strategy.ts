@@ -10,8 +10,10 @@ export class RefreshJwtStrategy extends PassportStrategy(
     super({
       jwtFromRequest: (req: Request) => {
         // Ưu tiên đọc từ cookie, nếu không có thì đọc từ header
-        return req.cookies?.refreshToken || 
-               ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        return (
+          req.cookies?.refreshToken ||
+          ExtractJwt.fromAuthHeaderAsBearerToken()(req)
+        );
       },
       secretOrKey: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
       passReqToCallback: true,
@@ -19,8 +21,9 @@ export class RefreshJwtStrategy extends PassportStrategy(
   }
 
   validate(req: Request, payload: any) {
-    const token = req.cookies?.refreshToken || 
-                  (req.headers.authorization ?? '').replace('Bearer ', '').trim();
+    const token =
+      req.cookies?.refreshToken ||
+      (req.headers.authorization ?? '').replace('Bearer ', '').trim();
 
     return { userId: payload.sub, refreshToken: token };
   }

@@ -15,7 +15,7 @@ import { GetSignatureDto } from './dto/get-signature.dto';
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadFileController {
-  constructor(private readonly uploadFileService: UploadFileService) { }
+  constructor(private readonly uploadFileService: UploadFileService) {}
 
   @Post()
   @UseInterceptors(
@@ -36,7 +36,9 @@ export class UploadFileController {
 
   @Post('signature')
   async getSignature(@Body() getSignatureDto: GetSignatureDto) {
-    const result = await this.uploadFileService.getUploadSignature(getSignatureDto.params);
+    const result = await this.uploadFileService.getUploadSignature(
+      getSignatureDto.params,
+    );
 
     return {
       success: true,

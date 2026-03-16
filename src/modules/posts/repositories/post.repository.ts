@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
-
 @Injectable()
 export class PostRepository {
   constructor(private prisma: PrismaService) {}
@@ -181,11 +180,14 @@ export class PostRepository {
   /**
    * Chia sẻ một bài post — tạo post mới với original_post_id trỏ về bài gốc
    */
-  async sharePost(data: {
-    user_id: bigint | number | string;
-    original_post_id: bigint | number | string;
-    content?: string | null;
-  }, tx?: Prisma.TransactionClient) {
+  async sharePost(
+    data: {
+      user_id: bigint | number | string;
+      original_post_id: bigint | number | string;
+      content?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
     return (tx || this.prisma).posts.create({
       data: {
         user_id: BigInt(data.user_id),
@@ -199,7 +201,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -228,7 +235,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -275,7 +287,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -312,5 +329,3 @@ export class PostRepository {
     });
   }
 }
-
-

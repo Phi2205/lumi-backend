@@ -1,7 +1,28 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+  Inject,
+  forwardRef,
+  Delete,
+} from '@nestjs/common';
 import { SocketGateway } from 'src/modules/realtime/gateways/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from '../services/post.service';
 import { PostLikeService } from '../services/post-like.service';
@@ -42,11 +63,14 @@ export class PostsController {
       },
     },
   })
-  @UseInterceptors(FilesInterceptor('files', 10, { storage: cloudinaryPostStorage }))
+  @UseInterceptors(
+    FilesInterceptor('files', 10, { storage: cloudinaryPostStorage }),
+  )
   async create(
     @Req() req: any,
     @Body() dto: CreatePostDto,
-    @UploadedFiles() files: Array<Express.Multer.File & { url?: string; public_id?: string }>,
+    @UploadedFiles()
+    files: Array<Express.Multer.File & { url?: string; public_id?: string }>,
   ) {
     const userId = req.user.userId;
     const media =
@@ -72,14 +96,16 @@ export class PostsController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    const result = await this.postCommentService.deleteComment(commentId, userId);
+    const result = await this.postCommentService.deleteComment(
+      commentId,
+      userId,
+    );
 
     // Broadcast to realtime gateway
     this.socketGateway.broadcastDeleteComment(id, commentId);
 
     return result;
   }
-
 
   @Post(':id/like')
   @ApiOperation({ summary: 'Toggle like a post' })
@@ -204,7 +230,11 @@ export class PostsController {
     schema: {
       type: 'object',
       properties: {
-        content: { type: 'string', nullable: true, description: 'Nội dung kèm khi share (tuỳ chọn)' },
+        content: {
+          type: 'string',
+          nullable: true,
+          description: 'Nội dung kèm khi share (tuỳ chọn)',
+        },
       },
     },
   })
@@ -236,7 +266,10 @@ export class PostsController {
 
   @Get(':id/shares')
   @ApiOperation({ summary: 'Get all shares of a post' })
-  @ApiResponse({ status: 200, description: 'List of users who shared the post' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users who shared the post',
+  })
   async getPostShares(
     @Param('id') postId: string,
     @Query('page') page: number = 1,

@@ -33,4 +33,4 @@ import { RedisModule } from '../../redis/redis.module';
   ],
   exports: [RealtimeService, PresenceService, SocketGateway],
 })
-export class RealtimeModule { }
+export class RealtimeModule {}

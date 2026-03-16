@@ -44,7 +44,9 @@ export class CloudinaryStorage implements StorageEngine {
 
             const cloudName = this.cloudinary.config().cloud_name;
             if (!cloudName) {
-              return callback(new Error('Cloudinary cloud_name not configured'));
+              return callback(
+                new Error('Cloudinary cloud_name not configured'),
+              );
             }
 
             callback(null, {

@@ -8,11 +8,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   constructor(private configService: ConfigService) {
     const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
-    
+
     this.client = new Redis({
       host: this.configService.get<string>('REDIS_HOST') || 'localhost',
       port: this.configService.get<number>('REDIS_PORT') || 6379,
-      ...(redisPassword && redisPassword.trim() !== '' && { password: redisPassword }),
+      ...(redisPassword &&
+        redisPassword.trim() !== '' && { password: redisPassword }),
       db: this.configService.get<number>('REDIS_DB') || 0,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);

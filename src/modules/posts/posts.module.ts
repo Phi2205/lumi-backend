@@ -1,4 +1,3 @@
-
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
@@ -16,7 +15,12 @@ import { PostCommentRepository } from './repositories/post-comment.repository';
 import { PostCommentService } from './services/post-comment.service';
 
 @Module({
-  imports: [PrismaModule, RedisModule, FriendsModule, forwardRef(() => RealtimeModule)],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    FriendsModule,
+    forwardRef(() => RealtimeModule),
+  ],
   controllers: [PostsController],
   providers: [
     PostService,

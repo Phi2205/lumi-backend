@@ -5,7 +5,10 @@ import { PostLikeRepository } from '../repositories/post-like.repository';
 export class PostLikeService {
   constructor(private postLikeRepository: PostLikeRepository) {}
 
-  async toggleLike(postId: bigint | number | string, userId: bigint | number | string) {
+  async toggleLike(
+    postId: bigint | number | string,
+    userId: bigint | number | string,
+  ) {
     const hasLiked = await this.postLikeRepository.checkLike(postId, userId);
 
     if (hasLiked) {
@@ -22,7 +25,11 @@ export class PostLikeService {
     page: number = 1,
     limit: number = 20,
   ) {
-    const { likes, total } = await this.postLikeRepository.findLikesByPostId(postId, page, limit);
+    const { likes, total } = await this.postLikeRepository.findLikesByPostId(
+      postId,
+      page,
+      limit,
+    );
 
     const data = likes.map((like) => ({
       post_id: like.post_id.toString(),

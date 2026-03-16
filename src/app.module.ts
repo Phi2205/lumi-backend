@@ -41,4 +41,4 @@ import { ReelsModule } from './modules/reels/reels.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

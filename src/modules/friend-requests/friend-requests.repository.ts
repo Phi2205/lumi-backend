@@ -4,12 +4,15 @@ import { FriendRequestStatus } from '@prisma/client';
 
 @Injectable()
 export class FriendRequestsRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Tìm friend request giữa 2 users
    */
-  async findFriendRequest(requesterId: bigint | string, receiverId: bigint | string) {
+  async findFriendRequest(
+    requesterId: bigint | string,
+    receiverId: bigint | string,
+  ) {
     return this.prisma.friend_requests.findUnique({
       where: {
         requester_id_receiver_id: {
@@ -23,7 +26,10 @@ export class FriendRequestsRepository {
   /**
    * Tìm friend request theo chiều ngược lại (B → A)
    */
-  async findReverseFriendRequest(requesterId: bigint | string, receiverId: bigint | string) {
+  async findReverseFriendRequest(
+    requesterId: bigint | string,
+    receiverId: bigint | string,
+  ) {
     return this.prisma.friend_requests.findUnique({
       where: {
         requester_id_receiver_id: {
@@ -37,7 +43,10 @@ export class FriendRequestsRepository {
   /**
    * Tạo friend request mới
    */
-  async createFriendRequest(requesterId: bigint | string, receiverId: bigint | string) {
+  async createFriendRequest(
+    requesterId: bigint | string,
+    receiverId: bigint | string,
+  ) {
     return this.prisma.friend_requests.create({
       data: {
         requester_id: BigInt(requesterId),
@@ -94,7 +103,10 @@ export class FriendRequestsRepository {
   /**
    * Xóa friend request
    */
-  async deleteFriendRequest(requesterId: bigint | string, receiverId: bigint | string) {
+  async deleteFriendRequest(
+    requesterId: bigint | string,
+    receiverId: bigint | string,
+  ) {
     return this.prisma.friend_requests.delete({
       where: {
         requester_id_receiver_id: {
@@ -149,5 +161,4 @@ export class FriendRequestsRepository {
 
     return { data, total };
   }
-
 }

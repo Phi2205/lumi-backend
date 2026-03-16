@@ -25,7 +25,8 @@ import { FriendsService } from '../../friends/friends.service';
   },
 })
 export class SocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -40,7 +41,7 @@ export class SocketGateway
     private readonly friendsService: FriendsService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
-  ) { }
+  ) {}
 
   /**
    * Cấu hình socket server sau khi khởi tạo
@@ -57,32 +58,42 @@ export class SocketGateway
       // Nếu không có token trong auth/headers, kiểm tra trong cookies
       if (!token && socket.handshake.headers.cookie) {
         const cookies = socket.handshake.headers.cookie.split(';');
-        const accessTokenCookie = cookies.find(c => c.trim().startsWith('accessToken='));
+        const accessTokenCookie = cookies.find((c) =>
+          c.trim().startsWith('accessToken='),
+        );
         if (accessTokenCookie) {
           token = accessTokenCookie.split('=')[1].trim();
         }
       }
 
       if (!token) {
-        this.logger.warn(`No token found for socket ${socket.id}, assigning guest role`);
+        this.logger.warn(
+          `No token found for socket ${socket.id}, assigning guest role`,
+        );
         socket.data.user = { id: `guest_${socket.id}`, role: 'guest' };
         return next();
       }
 
       try {
-        const jwtToken = token.startsWith('Bearer ') ? token.split(' ')[1] : token;
+        const jwtToken = token.startsWith('Bearer ')
+          ? token.split(' ')[1]
+          : token;
         const payload = await this.jwtService.verifyAsync(jwtToken);
         socket.data.user = payload;
-        this.logger.log(`Socket ${socket.id} authenticated for user ${payload.sub || payload.id}`);
+        this.logger.log(
+          `Socket ${socket.id} authenticated for user ${payload.sub || payload.id}`,
+        );
         next();
       } catch (error) {
-        this.logger.error(`Authentication error for socket ${socket.id}:`, error.message);
+        this.logger.error(
+          `Authentication error for socket ${socket.id}:`,
+          error.message,
+        );
         // Gán role guest thay vì reject connection để tránh loop reconnect nếu user ko logout
         socket.data.user = { id: `guest_${socket.id}`, role: 'guest' };
         next();
       }
     });
-
   }
 
   /**
@@ -101,7 +112,8 @@ export class SocketGateway
 
       // 2. Join vào tất cả các room conversation của user này
       try {
-        const result = await this.conversationService.getUserConversations(userId);
+        const result =
+          await this.conversationService.getUserConversations(userId);
         const conversations = result.data || [];
         for (const c of conversations) {
           socket.join(`conversation_${c.id}`);
@@ -111,7 +123,10 @@ export class SocketGateway
       }
 
       // 3. Mark user as online in Redis
-      const isFirst = await this.presenceService.markOnline(userId.toString(), socket.id);
+      const isFirst = await this.presenceService.markOnline(
+        userId.toString(),
+        socket.id,
+      );
 
       // 4. Thông báo cho những người liên quan (trong cùng hội thoại)
       if (isFirst) {
@@ -130,11 +145,13 @@ export class SocketGateway
       this.logger.log(`User disconnected: ${userId} (Socket ID: ${socket.id})`);
 
       // Mark as offline in Redis
-      this.presenceService.markOffline(userId.toString(), socket.id).then(async (isFullyOffline) => {
-        if (isFullyOffline) {
-          await this.notifyStatusChange(userId.toString(), false);
-        }
-      });
+      this.presenceService
+        .markOffline(userId.toString(), socket.id)
+        .then(async (isFullyOffline) => {
+          if (isFullyOffline) {
+            await this.notifyStatusChange(userId.toString(), false);
+          }
+        });
     } else {
       this.logger.log(`Guest disconnected (Socket ID: ${socket.id})`);
     }
@@ -144,7 +161,8 @@ export class SocketGateway
 
   @SubscribeMessage('send_message')
   async handleSendMessage(
-    @MessageBody() payload: {
+    @MessageBody()
+    payload: {
       conversationId: string;
       content?: string;
       attachments?: { url: string; type: string }[];
@@ -153,7 +171,9 @@ export class SocketGateway
   ) {
     const user = client.data.user;
     if (!user || user.role === 'guest') {
-      this.logger.warn(`Rejected send_message from unauthenticated socket ${client.id}`);
+      this.logger.warn(
+        `Rejected send_message from unauthenticated socket ${client.id}`,
+      );
       return;
     }
 
@@ -162,7 +182,7 @@ export class SocketGateway
 
     // Đảm bảo client đã join vào room conversation (đặc biệt cho conv mới tạo)
     client.join(roomName);
-    console.log("payload", payload);
+    console.log('payload', payload);
 
     try {
       const resultMessage = await this.messageService.sendMessage({
@@ -180,7 +200,9 @@ export class SocketGateway
       this.server.to(roomName).emit('new_message', messageData);
 
       // Lấy danh sách participants để thông báo cập nhật (hoặc cho những người chưa join room)
-      const result = await this.conversationService.getParticipants(payload.conversationId);
+      const result = await this.conversationService.getParticipants(
+        payload.conversationId,
+      );
       const participants = result.data || [];
 
       for (const p of participants) {
@@ -192,15 +214,12 @@ export class SocketGateway
         // }
 
         // Cập nhật danh sách hội thoại (unread count, last message, etc.)
-        this.server
-          .to(`user_${pId}`)
-          .to(pId)
-          .emit('conversation_updated', {
-            conversationId: payload.conversationId,
-            lastMessage: messageData,
-            senderId,
-            message_id: messageData.id,
-          });
+        this.server.to(`user_${pId}`).to(pId).emit('conversation_updated', {
+          conversationId: payload.conversationId,
+          lastMessage: messageData,
+          senderId,
+          message_id: messageData.id,
+        });
       }
     } catch (error) {
       this.logger.error('Error handling send_message:', error);
@@ -244,7 +263,6 @@ export class SocketGateway
     }
   }
 
-
   // ─── Post / Comment Gateway Logic ───────────────────────────────────────────
 
   @SubscribeMessage('join_post')
@@ -253,7 +271,9 @@ export class SocketGateway
     @ConnectedSocket() socket: Socket,
   ) {
     socket.join(`post:${data.postId}`);
-    this.logger.log(`Socket ${socket.id} joined post room: post:${data.postId}`);
+    this.logger.log(
+      `Socket ${socket.id} joined post room: post:${data.postId}`,
+    );
   }
 
   @SubscribeMessage('leave_post')
@@ -287,16 +307,19 @@ export class SocketGateway
    */
   private async notifyStatusChange(userId: string, isOnline: boolean) {
     try {
-      const lastOnline = isOnline ? new Date().toISOString() : await this.presenceService.getLastOnline(userId);
+      const lastOnline = isOnline
+        ? new Date().toISOString()
+        : await this.presenceService.getLastOnline(userId);
 
       // Lấy danh sách conversations để biết cần notify vào room nào
-      const result = await this.conversationService.getUserConversations(userId);
+      const result =
+        await this.conversationService.getUserConversations(userId);
       const conversations = result.data || [];
 
       const payload = {
         userId,
         is_online: isOnline,
-        last_online: lastOnline
+        last_online: lastOnline,
       };
 
       for (const conv of conversations) {
@@ -308,10 +331,15 @@ export class SocketGateway
       const friendIds = await this.friendsService.getFriendIds(userId);
       for (const friendId of friendIds) {
         const pId = friendId.toString();
-        this.server.to(`user_${pId}`).to(pId).emit('user_status_changed', payload);
+        this.server
+          .to(`user_${pId}`)
+          .to(pId)
+          .emit('user_status_changed', payload);
       }
 
-      this.logger.debug(`Notified status change for user ${userId}: ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+      this.logger.debug(
+        `Notified status change for user ${userId}: ${isOnline ? 'ONLINE' : 'OFFLINE'}`,
+      );
     } catch (error) {
       this.logger.error(`Error notifying status change: ${error.message}`);
     }
@@ -339,7 +367,9 @@ export class SocketGateway
     @ConnectedSocket() socket: Socket,
   ) {
     socket.join(`reel:${data.reelId}`);
-    this.logger.log(`Socket ${socket.id} joined reel room: reel:${data.reelId}`);
+    this.logger.log(
+      `Socket ${socket.id} joined reel room: reel:${data.reelId}`,
+    );
   }
 
   @SubscribeMessage('leave_reel')

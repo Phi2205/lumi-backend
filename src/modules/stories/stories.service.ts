@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { parsePaginationParams, createPaginationMeta } from 'src/utils/pagination';
+import {
+  parsePaginationParams,
+  createPaginationMeta,
+} from 'src/utils/pagination';
 
 @Injectable()
 export class StoriesService {
   constructor(private prisma: PrismaService) {}
 
   // 📸 TẠO STORY MỚI
-  async createStory(userId: string, mediaUrl: string|undefined, mediaType: string) {
+  async createStory(
+    userId: string,
+    mediaUrl: string | undefined,
+    mediaType: string,
+  ) {
     // Stories thường expire sau 24 giờ
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
@@ -86,7 +93,10 @@ export class StoriesService {
     limit?: string | number,
   ) {
     // Parse pagination params
-    const { page: pageNumber, limit: limitNumber } = parsePaginationParams(page, limit);
+    const { page: pageNumber, limit: limitNumber } = parsePaginationParams(
+      page,
+      limit,
+    );
 
     // Lấy danh sách friends
     const friendships = await this.prisma.friends.findMany({

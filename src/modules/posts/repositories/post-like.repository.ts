@@ -5,7 +5,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class PostLikeRepository {
   constructor(private prisma: PrismaService) {}
 
-  async likePost(postId: bigint | number | string, userId: bigint | number | string) {
+  async likePost(
+    postId: bigint | number | string,
+    userId: bigint | number | string,
+  ) {
     const pId = BigInt(postId);
     const uId = BigInt(userId);
 
@@ -30,7 +33,10 @@ export class PostLikeRepository {
     });
   }
 
-  async unlikePost(postId: bigint | number | string, userId: bigint | number | string) {
+  async unlikePost(
+    postId: bigint | number | string,
+    userId: bigint | number | string,
+  ) {
     const pId = BigInt(postId);
     const uId = BigInt(userId);
 
@@ -56,7 +62,10 @@ export class PostLikeRepository {
       return like;
     });
   }
-  async checkLike(postId: bigint | number | string, userId: bigint | number | string) {
+  async checkLike(
+    postId: bigint | number | string,
+    userId: bigint | number | string,
+  ) {
     const pId = BigInt(postId);
     const uId = BigInt(userId);
 
@@ -72,7 +81,10 @@ export class PostLikeRepository {
     return !!like;
   }
 
-  async findLikesForPosts(userId: bigint | number | string, postIds: (bigint | number | string)[]) {
+  async findLikesForPosts(
+    userId: bigint | number | string,
+    postIds: (bigint | number | string)[],
+  ) {
     return this.prisma.post_likes.findMany({
       where: {
         user_id: BigInt(userId),

@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PostCommentRepository } from '../repositories/post-comment.repository';
 import { PostRepository } from 'src/modules/posts/repositories/post.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
-
-
 
 @Injectable()
 export class PostCommentService {
@@ -61,8 +63,6 @@ export class PostCommentService {
       },
     };
 
-
-
     return responseData;
   }
 
@@ -93,7 +93,7 @@ export class PostCommentService {
         avatar_url: comment.users.avatar_url,
       },
       replies: [], // Root comments fetched initially have no replies loaded
-      has_replies: (comment as any)._count?.replies > 0,
+      has_replies: comment._count?.replies > 0,
     });
 
     return {
@@ -119,11 +119,7 @@ export class PostCommentService {
     const skip = (pageNumber - 1) * limitNumber;
 
     const [comments, total] = await Promise.all([
-      this.postCommentRepository.findByParentId(
-        parentId,
-        skip,
-        limitNumber,
-      ),
+      this.postCommentRepository.findByParentId(parentId, skip, limitNumber),
       this.postCommentRepository.countByParentId(parentId),
     ]);
 
@@ -144,7 +140,7 @@ export class PostCommentService {
         avatar_url: comment.users.avatar_url,
       },
       replies: [], // Root comments fetched initially have no replies loaded
-      has_replies: (comment as any)._count?.replies > 0,
+      has_replies: comment._count?.replies > 0,
     });
 
     return {
@@ -187,5 +183,3 @@ export class PostCommentService {
     };
   }
 }
-
-

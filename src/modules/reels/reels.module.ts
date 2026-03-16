@@ -10,9 +10,23 @@ import { ReelCommentRepository } from './repositories/reel-comment.repository';
 import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-    imports: [PrismaModule, forwardRef(() => RealtimeModule)],
-    controllers: [ReelsController],
-    providers: [ReelsService, ReelsRepository, ReelLikeService, ReelLikeRepository, ReelCommentService, ReelCommentRepository],
-    exports: [ReelsService, ReelsRepository, ReelLikeService, ReelLikeRepository, ReelCommentService, ReelCommentRepository],
+  imports: [PrismaModule, forwardRef(() => RealtimeModule)],
+  controllers: [ReelsController],
+  providers: [
+    ReelsService,
+    ReelsRepository,
+    ReelLikeService,
+    ReelLikeRepository,
+    ReelCommentService,
+    ReelCommentRepository,
+  ],
+  exports: [
+    ReelsService,
+    ReelsRepository,
+    ReelLikeService,
+    ReelLikeRepository,
+    ReelCommentService,
+    ReelCommentRepository,
+  ],
 })
-export class ReelsModule { }
+export class ReelsModule {}

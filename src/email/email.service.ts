@@ -12,7 +12,9 @@ export class EmailService {
 
     // Validate SMTP credentials
     if (!smtpUser || !smtpPass) {
-      console.warn('⚠️  SMTP credentials not configured. Email service will not work.');
+      console.warn(
+        '⚠️  SMTP credentials not configured. Email service will not work.',
+      );
       console.warn('Please set SMTP_USER and SMTP_PASS in your .env file');
     }
 
@@ -37,9 +39,11 @@ export class EmailService {
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPass = this.configService.get<string>('SMTP_PASS');
     console.log(smtpUser, smtpPass);
-    console.log("from: ", this.configService.get<string>('SMTP_FROM'));
+    console.log('from: ', this.configService.get<string>('SMTP_FROM'));
     if (!smtpUser || !smtpPass) {
-      throw new Error('SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file');
+      throw new Error(
+        'SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file',
+      );
     }
 
     const mailOptions = {

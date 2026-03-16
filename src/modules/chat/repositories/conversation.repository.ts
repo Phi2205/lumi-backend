@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ConversationRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Lấy tất cả conversations mà user tham gia
@@ -132,10 +132,7 @@ export class ConversationRepository {
       data: {
         type: 'private',
         conversation_participants: {
-          create: [
-            { user_id: userId1BigInt },
-            { user_id: userId2BigInt },
-          ],
+          create: [{ user_id: userId1BigInt }, { user_id: userId2BigInt }],
         },
       },
       include: {
@@ -158,12 +155,17 @@ export class ConversationRepository {
   /**
    * Tạo conversation group mới
    */
-  async createGroupConversation(creatorId: string, userIds: string[], name?: string, avatar?: string) {
+  async createGroupConversation(
+    creatorId: string,
+    userIds: string[],
+    name?: string,
+    avatar?: string,
+  ) {
     const creatorIdBigInt = BigInt(creatorId);
     // Đảm bảo không trùng lặp và không bao gồm người tạo trong danh sách userIds truyền vào
     const uniqueUserIds = Array.from(new Set(userIds))
-      .filter(id => id !== creatorId)
-      .map(id => BigInt(id));
+      .filter((id) => id !== creatorId)
+      .map((id) => BigInt(id));
 
     return this.prisma.conversations.create({
       data: {

@@ -72,7 +72,11 @@ async function bootstrap() {
   });
 
   await app.listen(process.env.PORT || 4000);
-  console.log(`🚀 Server is running on: http://localhost:${process.env.PORT || 4000}`);
-  console.log(`📚 Swagger API docs: http://localhost:${process.env.PORT || 4000}/docs`);
+  console.log(
+    `🚀 Server is running on: http://localhost:${process.env.PORT || 4000}`,
+  );
+  console.log(
+    `📚 Swagger API docs: http://localhost:${process.env.PORT || 4000}/docs`,
+  );
 }
 bootstrap();

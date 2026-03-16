@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ConversationParticipantsRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Lấy danh sách conversations của user với phân trang
@@ -11,7 +11,11 @@ export class ConversationParticipantsRepository {
    * @param page Trang hiện tại
    * @param limit Số lượng bản ghi trên mỗi trang
    */
-  async findByUserId(userId: string | bigint, page: number = 1, limit: number = 10) {
+  async findByUserId(
+    userId: string | bigint,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
@@ -91,7 +95,10 @@ export class ConversationParticipantsRepository {
   /**
    * Kiểm tra xem một user có trong conversation không
    */
-  async isParticipant(conversationId: string | bigint, userId: string | bigint) {
+  async isParticipant(
+    conversationId: string | bigint,
+    userId: string | bigint,
+  ) {
     const participant = await this.prisma.conversation_participants.findUnique({
       where: {
         conversation_id_user_id: {
@@ -106,7 +113,11 @@ export class ConversationParticipantsRepository {
   /**
    * Cập nhật tin nhắn cuối cùng đã xem và reset unread_count
    */
-  async markAsRead(conversationId: string | bigint, userId: string | bigint, lastMessageId: string | bigint) {
+  async markAsRead(
+    conversationId: string | bigint,
+    userId: string | bigint,
+    lastMessageId: string | bigint,
+  ) {
     return this.prisma.conversation_participants.update({
       where: {
         conversation_id_user_id: {
@@ -124,7 +135,10 @@ export class ConversationParticipantsRepository {
   /**
    * Lấy last_seen_message_id của người dùng trong cuộc hội thoại
    */
-  async getLastSeenMessageId(conversationId: string | bigint, userId: string | bigint) {
+  async getLastSeenMessageId(
+    conversationId: string | bigint,
+    userId: string | bigint,
+  ) {
     const participant = await this.prisma.conversation_participants.findUnique({
       where: {
         conversation_id_user_id: {
