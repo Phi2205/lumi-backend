@@ -17,6 +17,8 @@ import { ConversationService } from '../../chat/services/conversation.service';
 import { MessageService } from '../../chat/services/message.service';
 import { PostCommentService } from '../../posts/services/post-comment.service';
 import { FriendsService } from '../../friends/friends.service';
+import { UsersService } from '../../users/users.service';
+import { RecommendService } from '../../recommend/recommend.service';
 
 @WebSocketGateway({
   cors: {
@@ -25,8 +27,7 @@ import { FriendsService } from '../../friends/friends.service';
   },
 })
 export class SocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -39,9 +40,11 @@ export class SocketGateway
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
     private readonly friendsService: FriendsService,
+    private readonly usersService: UsersService,
+    private readonly recommendService: RecommendService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
-  ) {}
+  ) { }
 
   /**
    * Cấu hình socket server sau khi khởi tạo
@@ -148,6 +151,7 @@ export class SocketGateway
       this.presenceService
         .markOffline(userId.toString(), socket.id)
         .then(async (isFullyOffline) => {
+          console.log('User disconnected:', userId, isFullyOffline);
           if (isFullyOffline) {
             await this.notifyStatusChange(userId.toString(), false);
           }
@@ -220,6 +224,25 @@ export class SocketGateway
           senderId,
           message_id: messageData.id,
         });
+
+        // ─── Gửi event tương tác xuống hệ thống CF ───
+        if (pId !== senderId) {
+          this.recommendService
+            .logEvent({
+              actor_user_id: senderId,
+              target_user_id: pId,
+              event_type: 'message',
+              timestamp: new Date().toISOString(),
+              metadata: {
+                conversationId: payload.conversationId,
+                messageId: messageData.id,
+                source: 'chat_gateway',
+              },
+            })
+            .catch((err) =>
+              this.logger.error('Failed to log message event to CF:', err.message),
+            );
+        }
       }
     } catch (error) {
       this.logger.error('Error handling send_message:', error);
@@ -303,6 +326,55 @@ export class SocketGateway
   }
 
   /**
+   * Get list of online users
+   */
+  @SubscribeMessage('get_online_users')
+  async handleGetOnlineUsers(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload?: { limit?: number; exclude?: string[] },
+  ) {
+    const user = client.data.user;
+    if (!user || user.role === 'guest') return [];
+
+    const userId = (user.sub || user.id).toString();
+
+    try {
+      // 1. Lấy danh sách ID bạn bè
+      const friendIds = await this.friendsService.getFriendIds(userId);
+      const friendIdStrings = friendIds.map((id) => id.toString());
+
+      // 2. Lấy danh sách toàn bộ ID đang online từ Redis
+      const allOnlineIds = await this.presenceService.getOnlineUserIds();
+
+      // 3. Tìm giao điểm (Chỉ lấy bạn bè đang online)
+      let onlineFriendIds = friendIdStrings.filter((id) =>
+        allOnlineIds.includes(id),
+      );
+
+      // 4. Áp dụng loại trừ (exclude) các ID đã hiển thị trên FE
+      if (payload?.exclude && payload.exclude.length > 0) {
+        const excludeList = payload.exclude;
+        onlineFriendIds = onlineFriendIds.filter(
+          (id) => !excludeList.includes(id),
+        );
+      }
+
+      // 5. Áp dụng giới hạn (limit)
+      if (payload?.limit && payload.limit > 0) {
+        onlineFriendIds = onlineFriendIds.slice(0, payload.limit);
+      }
+
+      if (onlineFriendIds.length === 0) return [];
+
+      // 6. Lấy thông tin chi tiết từ Database
+      return await this.usersService.findByIds(onlineFriendIds);
+    } catch (error) {
+      this.logger.error('Error getting online friends:', error);
+      return [];
+    }
+  }
+
+  /**
    * Thông báo trạng thái online/offline cho tất cả participants trong các cuộc trò chuyện của user
    */
   private async notifyStatusChange(userId: string, isOnline: boolean) {
@@ -330,6 +402,7 @@ export class SocketGateway
       // Thông báo cho danh sách bạn bè qua room cá nhân của họ
       const friendIds = await this.friendsService.getFriendIds(userId);
       for (const friendId of friendIds) {
+        console.log('Notifying status change for user', friendId, isOnline);
         const pId = friendId.toString();
         this.server
           .to(`user_${pId}`)

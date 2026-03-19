@@ -13,7 +13,7 @@ export class UsersService {
     private readonly friendsRepository: FriendsRepository,
     @Inject(forwardRef(() => RecommendService))
     private readonly recommendService: RecommendService,
-  ) {}
+  ) { }
 
   // Tìm kiếm user theo name (chứa chuỗi, không phân biệt hoa/thường)
   async findByName(name?: string, page = 1, limit = 20) {
@@ -119,6 +119,14 @@ export class UsersService {
     }
 
     return 'none';
+  }
+
+  async findByIds(ids: string[]) {
+    const users = await this.usersRepository.findByIds(ids);
+    return users.map((u) => ({
+      ...u,
+      id: u.id.toString(),
+    }));
   }
 
   async updateProfile(userId: string, data: UpdateProfileDto) {

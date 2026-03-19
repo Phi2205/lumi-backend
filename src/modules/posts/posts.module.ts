@@ -3,6 +3,7 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { FriendsModule } from '../friends/friends.module';
 import { RealtimeModule } from '../realtime/realtime.module';
+import { RecommendModule } from '../recommend/recommend.module';
 
 import { PostsController } from './controllers/posts.controller';
 import { PostService } from './services/post.service';
@@ -20,6 +21,7 @@ import { PostCommentService } from './services/post-comment.service';
     RedisModule,
     FriendsModule,
     forwardRef(() => RealtimeModule),
+    RecommendModule,
   ],
   controllers: [PostsController],
   providers: [
@@ -34,4 +36,4 @@ import { PostCommentService } from './services/post-comment.service';
   ],
   exports: [PostService, PostCommentService, PostLikeService, PostMediaService],
 })
-export class PostsModule {}
+export class PostsModule { }

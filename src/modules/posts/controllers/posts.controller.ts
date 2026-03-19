@@ -30,6 +30,7 @@ import { CreatePostDto } from '../dto/create-post.dto';
 import { cloudinaryPostStorage } from 'src/config/multer.config';
 
 import { PostCommentService } from '../services/post-comment.service';
+import { RecommendService } from 'src/modules/recommend/recommend.service';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -40,9 +41,10 @@ export class PostsController {
     private postService: PostService,
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
+    private recommendService: RecommendService,
     @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
   @ApiResponse({ status: 201, description: 'Post created' })
@@ -218,6 +220,36 @@ export class PostsController {
 
     // Broadcast to realtime gateway
     this.socketGateway.broadcastComment(postId, result.data);
+
+    // ─── Gửi event tương tác xuống hệ thống CF ───
+    try {
+      // Lấy thông tin post để biết ai là target (owner)
+      const postResult = await this.postService.getPostById(postId, userId);
+      if (postResult.success && postResult.data) {
+        const targetUserId = postResult.data.user_id;
+
+        // Chỉ log nếu người comment khác người sở hữu post
+        if (targetUserId !== userId.toString()) {
+          this.recommendService
+            .logEvent({
+              actor_user_id: userId,
+              target_user_id: targetUserId,
+              event_type: 'comment_post',
+              timestamp: new Date().toISOString(),
+              content_id: postId,
+              metadata: {
+                commentId: result.data.id,
+                source: 'posts_controller',
+              },
+            })
+            .catch((err) =>
+              console.error('Failed to log comment_post event to CF:', err.message),
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error logging comment interaction:', error);
+    }
 
     return result;
   }

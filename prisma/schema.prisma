@@ -91,6 +91,17 @@
     @@id([post_id, user_id])
   }
 
+  model post_views {
+    post_id    BigInt
+    user_id    BigInt
+    viewed_at  DateTime? @default(now()) @db.Timestamp(6)
+    posts      posts     @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+    @@id([post_id, user_id])
+    @@map("post_views")
+  }
+
   model posts {
     id               BigInt          @id @default(autoincrement())
     user_id          BigInt
@@ -103,6 +114,7 @@
     post_comments    post_comments[]
     post_likes       post_likes[]
     post_media       post_media[]
+    post_views       post_views[]
     original_post    posts?          @relation("PostShares", fields: [original_post_id], references: [id], onUpdate: NoAction)
     shared_posts     posts[]         @relation("PostShares")
     users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -214,6 +226,7 @@
     messages                            messages[]
     post_comments                       post_comments[]
     post_likes                          post_likes[]
+    post_views                          post_views[]
     posts                               posts[]
     stories                             stories[]
     story_views                         story_views[]

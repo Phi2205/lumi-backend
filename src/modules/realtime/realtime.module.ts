@@ -8,6 +8,8 @@ import { RedisIoAdapter } from './adapters/redis.adapter';
 import { PostsModule } from '../posts/posts.module';
 import { ChatModule } from '../chat/chat.module';
 import { FriendsModule } from '../friends/friends.module';
+import { UsersModule } from '../users/users.module';
+import { RecommendModule } from '../recommend/recommend.module';
 import { RedisModule } from '../../redis/redis.module';
 
 @Module({
@@ -16,6 +18,8 @@ import { RedisModule } from '../../redis/redis.module';
     forwardRef(() => PostsModule),
     ChatModule,
     FriendsModule,
+    UsersModule,
+    RecommendModule,
     RedisModule, // Added RedisModule
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -33,4 +37,4 @@ import { RedisModule } from '../../redis/redis.module';
   ],
   exports: [RealtimeService, PresenceService, SocketGateway],
 })
-export class RealtimeModule {}
+export class RealtimeModule { }

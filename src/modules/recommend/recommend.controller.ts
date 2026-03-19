@@ -49,7 +49,7 @@ export class RecommendController {
     const userId = req.user.userId;
     // Calling the recommendation service with specified parameters
     return this.recommendService.getRecommendUsers(userId, {
-      k: k ? Number(k) : 20,
+      k: k ? Number(k) : 40,
       window_days: windowDays ? Number(windowDays) : 30,
       neighbor_k: neighborK ? Number(neighborK) : 100,
     });

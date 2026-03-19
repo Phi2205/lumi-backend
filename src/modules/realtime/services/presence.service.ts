@@ -9,7 +9,7 @@ export class PresenceService {
   private readonly LAST_ONLINE_PREFIX = 'presence:last_online:';
   private readonly HEARTBEAT_TTL = 60; // 60 giây TTL theo yêu cầu
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(private readonly redisService: RedisService) { }
 
   /**
    * Đánh dấu người dùng là online
@@ -146,14 +146,31 @@ export class PresenceService {
   }
 
   /**
-   * Lấy danh sách ID các user đang online
+   * Lấy danh sách ID các user đang online với tùy chọn lọc và giới hạn
    */
-  async getOnlineUserIds(): Promise<string[]> {
+  async getOnlineUserIds(options?: {
+    limit?: number;
+    exclude?: string[];
+  }): Promise<string[]> {
     try {
       const keys = await this.redisService
         .getClient()
         .keys(`${this.PRESENCE_PREFIX}*`);
-      return keys.map((key) => key.replace(this.PRESENCE_PREFIX, ''));
+
+      let userIds = keys.map((key) => key.replace(this.PRESENCE_PREFIX, ''));
+
+      // Loại trừ các user ID đã có
+      if (options?.exclude && options.exclude.length > 0) {
+        const excludeList = options.exclude;
+        userIds = userIds.filter((id) => !excludeList.includes(id));
+      }
+
+      // Giới hạn số lượng
+      if (options?.limit && options.limit > 0) {
+        userIds = userIds.slice(0, options.limit);
+      }
+
+      return userIds;
     } catch (error) {
       this.logger.error(`Error listing online users: ${error.message}`);
       return [];
