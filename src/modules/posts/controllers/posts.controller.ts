@@ -149,7 +149,14 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Posts marked as seen' })
   async markAsSeen(@Body('postIds') postIds: string[], @Req() req: any) {
     const userId = req.user.userId;
-    return this.postViewService.markAsSeen(postIds, userId);
+    const result = await this.postViewService.markAsSeen(postIds, userId);
+
+    // Đồng bộ tức thì với queue recommend trong Redis
+    this.recommendService.syncSeenStatusInQueue(userId, postIds).catch((err) =>
+      console.error('Failed to sync seen status in queue:', err.message),
+    );
+
+    return result;
   }
 
   @Get('unseen')
@@ -209,6 +216,14 @@ export class PostsController {
       message: 'User posts fetched successfully',
       data: result,
     };
+  }
+
+  @Get('recommendations')
+  @ApiOperation({ summary: 'Get recommended posts for the user' })
+  @ApiResponse({ status: 200, description: 'List of recommended posts' })
+  async getRecommendPosts(@Req() req: any, @Query('limit') limit: number = 10) {
+    const userId = req.user.userId;
+    return this.recommendService.getRecommendedPosts(userId, +limit);
   }
 
   @Get(':id')

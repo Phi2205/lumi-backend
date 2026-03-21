@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, Req, Post } from '@nestjs/common';
 import { RecommendService } from './recommend.service';
 import {
   ApiTags,
@@ -14,7 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('JWT-auth')
 export class RecommendController {
-  constructor(private readonly recommendService: RecommendService) {}
+  constructor(private readonly recommendService: RecommendService) { }
 
   @Get('users')
   @ApiOperation({ summary: 'Get recommended users for friend connection' })
@@ -53,5 +53,13 @@ export class RecommendController {
       window_days: windowDays ? Number(windowDays) : 30,
       neighbor_k: neighborK ? Number(neighborK) : 100,
     });
+  }
+
+  @Post('clear')
+  @ApiOperation({ summary: 'Clear recommendation cache for the current user' })
+  @ApiResponse({ status: 200, description: 'Cache cleared successfully' })
+  async clearRecommendCache(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.recommendService.clearRecommendCache(userId);
   }
 }
