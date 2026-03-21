@@ -30,6 +30,7 @@ import { CreatePostDto } from '../dto/create-post.dto';
 import { cloudinaryPostStorage } from 'src/config/multer.config';
 
 import { PostCommentService } from '../services/post-comment.service';
+import { PostViewService } from '../services/post-view.service';
 import { RecommendService } from 'src/modules/recommend/recommend.service';
 
 @ApiTags('posts')
@@ -41,6 +42,7 @@ export class PostsController {
     private postService: PostService,
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
+    private postViewService: PostViewService,
     private recommendService: RecommendService,
     @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,
@@ -147,8 +149,7 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Posts marked as seen' })
   async markAsSeen(@Body('postIds') postIds: string[], @Req() req: any) {
     const userId = req.user.userId;
-    await this.postService.markPostsAsSeen(postIds, userId);
-    return { success: true, message: 'Posts marked as seen' };
+    return this.postViewService.markAsSeen(postIds, userId);
   }
 
   @Get('unseen')
@@ -161,6 +162,53 @@ export class PostsController {
   ) {
     const userId = req.user.userId;
     return this.postService.getUnseenPosts(userId, page, limit);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get posts of current user' })
+  @ApiResponse({ status: 200, description: 'List of posts by current user' })
+  async getMyPosts(
+    @Req() req: any,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = req.user.userId;
+    const result = await this.postService.getUserPosts(
+      userId,
+      userId,
+      cursor,
+      limit ? parseInt(limit) : 10,
+    );
+
+    return {
+      success: true,
+      message: 'My posts fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get posts of a user' })
+  @ApiResponse({ status: 200, description: 'List of posts by user' })
+  async getUserPosts(
+    @Param('userId') userId: string,
+    @Req() req: any,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const viewerUserId = req.user.userId;
+    const result = await this.postService.getUserPosts(
+      userId,
+      viewerUserId,
+      cursor,
+      limit ? parseInt(limit) : 10,
+    );
+
+    return {
+      success: true,
+      message: 'User posts fetched successfully',
+      data: result,
+    };
   }
 
   @Get(':id')
@@ -246,6 +294,7 @@ export class PostsController {
               console.error('Failed to log comment_post event to CF:', err.message),
             );
         }
+        console.log('Commented on post:', postId);
       }
     } catch (error) {
       console.error('Error logging comment interaction:', error);
@@ -253,6 +302,7 @@ export class PostsController {
 
     return result;
   }
+
 
   // ─── Share ───────────────────────────────────────────────────────────────────
 

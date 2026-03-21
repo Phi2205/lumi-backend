@@ -13,7 +13,7 @@ export class PostService {
     private redisService: RedisService,
     private friendsService: FriendsService,
     private postLikeRepository: PostLikeRepository,
-  ) {}
+  ) { }
 
   /**
    * Tạo post với transaction
@@ -139,28 +139,28 @@ export class PostService {
         })),
         original_post: (post as any).original_post
           ? {
-              id: (post as any).original_post.id.toString(),
-              user_id: (post as any).original_post.user_id.toString(),
-              content: (post as any).original_post.content,
-              created_at: (post as any).original_post.created_at,
-              like_count: (post as any).original_post.like_count || 0,
-              comment_count: (post as any).original_post.comment_count || 0,
-              share_count: (post as any).original_post.share_count || 0,
-              user: {
-                id: (post as any).original_post.users.id.toString(),
-                username: (post as any).original_post.users.username,
-                name: (post as any).original_post.users.name,
-                avatar_url: (post as any).original_post.users.avatar_url,
-              },
-              post_media: (post as any).original_post.post_media.map(
-                (m: any) => ({
-                  id: m.id.toString(),
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order,
-                }),
-              ),
-            }
+            id: (post as any).original_post.id.toString(),
+            user_id: (post as any).original_post.user_id.toString(),
+            content: (post as any).original_post.content,
+            created_at: (post as any).original_post.created_at,
+            like_count: (post as any).original_post.like_count || 0,
+            comment_count: (post as any).original_post.comment_count || 0,
+            share_count: (post as any).original_post.share_count || 0,
+            user: {
+              id: (post as any).original_post.users.id.toString(),
+              username: (post as any).original_post.users.username,
+              name: (post as any).original_post.users.name,
+              avatar_url: (post as any).original_post.users.avatar_url,
+            },
+            post_media: (post as any).original_post.post_media.map(
+              (m: any) => ({
+                id: m.id.toString(),
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order,
+              }),
+            ),
+          }
           : null,
       },
     };
@@ -234,28 +234,28 @@ export class PostService {
           })),
           original_post: (post as any).original_post
             ? {
-                id: (post as any).original_post.id.toString(),
-                user_id: (post as any).original_post.user_id.toString(),
-                content: (post as any).original_post.content,
-                created_at: (post as any).original_post.created_at,
-                like_count: (post as any).original_post.like_count || 0,
-                comment_count: (post as any).original_post.comment_count || 0,
-                share_count: (post as any).original_post.share_count || 0,
-                user: {
-                  id: (post as any).original_post.users.id.toString(),
-                  username: (post as any).original_post.users.username,
-                  name: (post as any).original_post.users.name,
-                  avatar_url: (post as any).original_post.users.avatar_url,
-                },
-                post_media: (post as any).original_post.post_media.map(
-                  (m: any) => ({
-                    id: m.id.toString(),
-                    media_url: m.media_url,
-                    media_type: m.media_type,
-                    order: m.order,
-                  }),
-                ),
-              }
+              id: (post as any).original_post.id.toString(),
+              user_id: (post as any).original_post.user_id.toString(),
+              content: (post as any).original_post.content,
+              created_at: (post as any).original_post.created_at,
+              like_count: (post as any).original_post.like_count || 0,
+              comment_count: (post as any).original_post.comment_count || 0,
+              share_count: (post as any).original_post.share_count || 0,
+              user: {
+                id: (post as any).original_post.users.id.toString(),
+                username: (post as any).original_post.users.username,
+                name: (post as any).original_post.users.name,
+                avatar_url: (post as any).original_post.users.avatar_url,
+              },
+              post_media: (post as any).original_post.post_media.map(
+                (m: any) => ({
+                  id: m.id.toString(),
+                  media_url: m.media_url,
+                  media_type: m.media_type,
+                  order: m.order,
+                }),
+              ),
+            }
             : null,
         })),
         pagination: {
@@ -316,26 +316,26 @@ export class PostService {
           },
           original_post: sharedPost.original_post
             ? {
-                id: sharedPost.original_post.id.toString(),
-                user_id: sharedPost.original_post.user_id.toString(),
-                content: sharedPost.original_post.content,
-                created_at: sharedPost.original_post.created_at,
-                like_count: sharedPost.original_post.like_count || 0,
-                comment_count: sharedPost.original_post.comment_count || 0,
-                share_count: sharedPost.original_post.share_count || 0,
-                user: {
-                  id: sharedPost.original_post.users.id.toString(),
-                  username: sharedPost.original_post.users.username,
-                  name: sharedPost.original_post.users.name,
-                  avatar_url: sharedPost.original_post.users.avatar_url,
-                },
-                post_media: sharedPost.original_post.post_media.map((m) => ({
-                  id: m.id.toString(),
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order,
-                })),
-              }
+              id: sharedPost.original_post.id.toString(),
+              user_id: sharedPost.original_post.user_id.toString(),
+              content: sharedPost.original_post.content,
+              created_at: sharedPost.original_post.created_at,
+              like_count: sharedPost.original_post.like_count || 0,
+              comment_count: sharedPost.original_post.comment_count || 0,
+              share_count: sharedPost.original_post.share_count || 0,
+              user: {
+                id: sharedPost.original_post.users.id.toString(),
+                username: sharedPost.original_post.users.username,
+                name: sharedPost.original_post.users.name,
+                avatar_url: sharedPost.original_post.users.avatar_url,
+              },
+              post_media: sharedPost.original_post.post_media.map((m) => ({
+                id: m.id.toString(),
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order,
+              })),
+            }
             : null,
         },
       };
@@ -377,26 +377,26 @@ export class PostService {
           },
           original_post: post.original_post
             ? {
-                id: post.original_post.id.toString(),
-                user_id: post.original_post.user_id.toString(),
-                content: post.original_post.content,
-                created_at: post.original_post.created_at,
-                like_count: post.original_post.like_count || 0,
-                comment_count: post.original_post.comment_count || 0,
-                share_count: post.original_post.share_count || 0,
-                user: {
-                  id: post.original_post.users.id.toString(),
-                  username: post.original_post.users.username,
-                  name: post.original_post.users.name,
-                  avatar_url: post.original_post.users.avatar_url,
-                },
-                post_media: post.original_post.post_media.map((m) => ({
-                  id: m.id.toString(),
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order,
-                })),
-              }
+              id: post.original_post.id.toString(),
+              user_id: post.original_post.user_id.toString(),
+              content: post.original_post.content,
+              created_at: post.original_post.created_at,
+              like_count: post.original_post.like_count || 0,
+              comment_count: post.original_post.comment_count || 0,
+              share_count: post.original_post.share_count || 0,
+              user: {
+                id: post.original_post.users.id.toString(),
+                username: post.original_post.users.username,
+                name: post.original_post.users.name,
+                avatar_url: post.original_post.users.avatar_url,
+              },
+              post_media: post.original_post.post_media.map((m) => ({
+                id: m.id.toString(),
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order,
+              })),
+            }
             : null,
         })),
         pagination: {
@@ -448,6 +448,87 @@ export class PostService {
           hasNextPage: shares.length === limitNumber,
         },
       },
+    };
+  }
+  /**
+   * Lấy danh sách post của một user (bao gồm cả original và share)
+   */
+  async getUserPosts(
+    userId: bigint | number | string,
+    viewerUserId: bigint | number | string,
+    cursor?: string,
+    limit: number = 10,
+  ) {
+    const limitNumber = Number(limit);
+
+    const posts = await this.postRepository.findByUserId(
+      userId,
+      cursor,
+      limitNumber,
+    );
+
+    const likedPosts = await this.postLikeRepository.findLikesForPosts(
+      viewerUserId,
+      posts.map((p) => p.id),
+    );
+
+    const likedPostIds = new Set(likedPosts.map((lp) => lp.post_id.toString()));
+
+    const items = posts.map((post) => ({
+      id: post.id.toString(),
+      user_id: post.user_id.toString(),
+      content: post.content,
+      created_at: post.created_at,
+      like_count: post.like_count || 0,
+      comment_count: post.comment_count || 0,
+      share_count: post.share_count || 0,
+      has_liked: likedPostIds.has(post.id.toString()),
+      user: {
+        id: post.users.id.toString(),
+        username: post.users.username,
+        name: post.users.name,
+        avatar_url: post.users.avatar_url,
+      },
+      post_media: post.post_media.map((m) => ({
+        id: m.id.toString(),
+        media_url: m.media_url,
+        media_type: m.media_type,
+        order: m.order,
+      })),
+      original_post: (post as any).original_post
+        ? {
+          id: (post as any).original_post.id.toString(),
+          user_id: (post as any).original_post.user_id.toString(),
+          content: (post as any).original_post.content,
+          created_at: (post as any).original_post.created_at,
+          like_count: (post as any).original_post.like_count || 0,
+          comment_count: (post as any).original_post.comment_count || 0,
+          share_count: (post as any).original_post.share_count || 0,
+          user: {
+            id: (post as any).original_post.users.id.toString(),
+            username: (post as any).original_post.users.username,
+            name: (post as any).original_post.users.name,
+            avatar_url: (post as any).original_post.users.avatar_url,
+          },
+          post_media: (post as any).original_post.post_media.map(
+            (m: any) => ({
+              id: m.id.toString(),
+              media_url: m.media_url,
+              media_type: m.media_type,
+              order: m.order,
+            }),
+          ),
+        }
+        : null,
+    }));
+
+    const nextCursor =
+      items.length === limitNumber ? items[items.length - 1].id : null;
+
+    return {
+      items,
+      nextCursor,
+      hasMore: items.length === limitNumber,
     };
   }
 }

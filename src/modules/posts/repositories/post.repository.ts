@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PostRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tạo post (hỗ trợ tạo nhiều media thông qua relation post_media)
@@ -24,14 +24,14 @@ export class PostRepository {
         content: data.content ?? null,
         ...(data.media?.length
           ? {
-              post_media: {
-                create: data.media.map((m, idx) => ({
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order ?? idx,
-                })),
-              },
-            }
+            post_media: {
+              create: data.media.map((m, idx) => ({
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order ?? idx,
+              })),
+            },
+          }
           : {}),
       },
       include: {
@@ -63,19 +63,53 @@ export class PostRepository {
   }
 
   /**
-   * Lấy danh sách post của 1 user
+   * Lấy danh sách post của 1 user (bao gồm cả bài share)
    */
   async findByUserId(
     userId: bigint | number | string,
-    skip?: number,
-    take?: number,
+    cursor?: string,
+    limit: number = 10,
   ) {
     return this.prisma.posts.findMany({
+      where: {
+        user_id: BigInt(userId),
+        ...(cursor ? { id: { lt: BigInt(cursor) } } : {}),
+      },
+      include: {
+        post_media: { orderBy: { order: 'asc' } },
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        original_post: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
+            },
+            post_media: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+      orderBy: { id: 'desc' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Đếm tổng số post của 1 user
+   */
+  async countByUserId(userId: bigint | number | string) {
+    return this.prisma.posts.count({
       where: { user_id: BigInt(userId) },
-      include: { post_media: { orderBy: { order: 'asc' } } },
-      orderBy: { created_at: 'desc' },
-      skip,
-      take,
     });
   }
 

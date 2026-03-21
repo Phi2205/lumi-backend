@@ -14,6 +14,8 @@ import { PostLikeRepository } from './repositories/post-like.repository';
 import { PostLikeService } from './services/post-like.service';
 import { PostCommentRepository } from './repositories/post-comment.repository';
 import { PostCommentService } from './services/post-comment.service';
+import { PostViewRepository } from './repositories/post-view.repository';
+import { PostViewService } from './services/post-view.service';
 
 @Module({
   imports: [
@@ -33,7 +35,15 @@ import { PostCommentService } from './services/post-comment.service';
     PostLikeService,
     PostCommentRepository,
     PostCommentService,
+    PostViewRepository,
+    PostViewService,
   ],
-  exports: [PostService, PostCommentService, PostLikeService, PostMediaService],
+  exports: [
+    PostService,
+    PostCommentService,
+    PostLikeService,
+    PostMediaService,
+    PostViewService,
+  ],
 })
 export class PostsModule { }
