@@ -458,6 +458,7 @@ export class PostService {
     viewerUserId: bigint | number | string,
     cursor?: string,
     limit: number = 10,
+    originalOnly: boolean = false,
   ) {
     const limitNumber = Number(limit);
 
@@ -465,6 +466,7 @@ export class PostService {
       userId,
       cursor,
       limitNumber,
+      originalOnly,
     );
 
     const likedPosts = await this.postLikeRepository.findLikesForPosts(

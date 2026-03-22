@@ -185,6 +185,7 @@ export class PostsController {
       userId,
       cursor,
       limit ? parseInt(limit) : 10,
+      true,
     );
 
     return {
@@ -209,6 +210,7 @@ export class PostsController {
       viewerUserId,
       cursor,
       limit ? parseInt(limit) : 10,
+      true,
     );
 
     return {

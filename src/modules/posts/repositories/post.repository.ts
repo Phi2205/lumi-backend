@@ -69,10 +69,12 @@ export class PostRepository {
     userId: bigint | number | string,
     cursor?: string,
     limit: number = 10,
+    originalOnly: boolean = false,
   ) {
     return this.prisma.posts.findMany({
       where: {
         user_id: BigInt(userId),
+        ...(originalOnly ? { original_post_id: null } : {}),
         ...(cursor ? { id: { lt: BigInt(cursor) } } : {}),
       },
       include: {
