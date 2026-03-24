@@ -197,16 +197,17 @@ export class RecommendService {
         finalResult.recommendations.map(async (rec: any) => {
           if (!rec.user) return rec;
 
-          const friendStatus = await this.usersService.getFriendStatus(
-            userId,
-            rec.user.id,
-          );
+          const [friendStatus, hasStory] = await Promise.all([
+            this.usersService.getFriendStatus(userId, rec.user.id),
+            this.hasStory(rec.user.id),
+          ]);
 
           return {
             ...rec,
             user: {
               ...rec.user,
               friend_status: friendStatus,
+              hasStory: hasStory,
             },
           };
         }),
@@ -379,10 +380,17 @@ export class RecommendService {
       const likedPostIds = new Set(userLikes.map((l) => l.post_id.toString()));
       const postsMap = new Map(posts.map((p) => [p.id.toString(), p]));
 
-      const orderedPosts = selectedIds
-        .map((id) => {
+      const orderedPosts = await Promise.all(
+        selectedIds.map(async (id) => {
           const post = postsMap.get(id);
           if (!post) return null;
+
+          const [userHasStory, originalUserHasStory] = await Promise.all([
+            this.hasStory(post.users.id.toString()),
+            post.original_post
+              ? this.hasStory(post.original_post.users.id.toString())
+              : Promise.resolve(false),
+          ]);
 
           return {
             id: post.id.toString(),
@@ -398,6 +406,7 @@ export class RecommendService {
               username: post.users.username,
               name: post.users.name,
               avatar_url: post.users.avatar_url,
+              has_story: userHasStory,
             },
             post_media: post.post_media.map((m) => ({
               id: m.id.toString(),
@@ -419,6 +428,7 @@ export class RecommendService {
                   username: post.original_post.users.username,
                   name: post.original_post.users.name,
                   avatar_url: post.original_post.users.avatar_url,
+                  hasStory: originalUserHasStory,
                 },
                 post_media: post.original_post.post_media.map((m) => ({
                   id: m.id.toString(),
@@ -429,8 +439,8 @@ export class RecommendService {
               }
               : null,
           };
-        })
-        .filter((p) => p !== null);
+        }),
+      ).then((results) => results.filter((p) => p !== null));
 
       return {
         success: true,
@@ -524,6 +534,49 @@ export class RecommendService {
     } catch (error) {
       console.error(`Error calling Recommend API ${endpoint}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * 🔍 KIỂM TRA USER CÓ STORY ACTIVE KHÔNG (Sao chép từ StoriesService để tránh circular dependency)
+   */
+  private async hasStory(userId: string): Promise<boolean> {
+    const cacheKey = `user:has_story:${userId}`;
+
+    try {
+      // 1. Kiểm tra trong Redis cache
+      const cached = await this.redisService.get(cacheKey);
+      if (cached !== null) {
+        return cached === 'true';
+      }
+
+      // 2. Nếu không có trong cache, query Database
+      const count = await this.prisma.stories.count({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      const has = count > 0;
+
+      // 3. Lưu vào Redis với TTL 24h (86400s)
+      await this.redisService.set(cacheKey, has.toString(), 86400);
+
+      return has;
+    } catch (error) {
+      // Fallback query DB nếu Redis lỗi
+      const count = await this.prisma.stories.count({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+      return count > 0;
     }
   }
 }

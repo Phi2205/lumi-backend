@@ -43,6 +43,7 @@ export class PostsController {
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
     private postViewService: PostViewService,
+    @Inject(forwardRef(() => RecommendService))
     private recommendService: RecommendService,
     @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,

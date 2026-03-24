@@ -29,7 +29,7 @@ import { CreateStoryDto } from './dto/create-story.dto';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('JWT-auth')
 export class StoriesController {
-  constructor(private storiesService: StoriesService) {}
+  constructor(private storiesService: StoriesService) { }
 
   @ApiOperation({ summary: 'Create a new story' })
   @ApiConsumes('multipart/form-data')
@@ -174,47 +174,30 @@ export class StoriesController {
   @ApiResponse({
     status: 200,
     description: 'Stories of the user',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            user: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                name: { type: 'string' },
-                username: { type: 'string' },
-                avatar_url: { type: 'string', nullable: true },
-              },
-            },
-            stories: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string' },
-                  media_url: { type: 'string' },
-                  media_type: { type: 'string' },
-                  streaming_url: { type: 'string', nullable: true },
-                  created_at: { type: 'string', format: 'date-time' },
-                  expires_at: { type: 'string', format: 'date-time' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
   })
   @ApiResponse({ status: 403, description: 'Not friends with this user' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @Get('user/:userId')
   async getUserStories(@Param('userId') userId: string, @Req() req: any) {
     return this.storiesService.getUserStoriesForViewer(userId, req.user.userId);
+  }
+
+  @ApiOperation({ summary: 'Check if user has active stories' })
+  @ApiResponse({
+    status: 200,
+    description: 'Boolean indicating if user has active stories',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        hasStory: { type: 'boolean' },
+      },
+    },
+  })
+  @Get('has-story/:userId')
+  async hasStory(@Param('userId') userId: string) {
+    const has = await this.storiesService.hasStory(userId);
+    return { success: true, hasStory: has };
   }
 
   @ApiOperation({ summary: 'Delete a story' })

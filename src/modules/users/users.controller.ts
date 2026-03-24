@@ -27,7 +27,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly recommendService: RecommendService,
     private readonly redisService: RedisService,
-  ) {}
+  ) { }
 
   // GET /users?name=abc&page=1&limit=20
   @Get()
@@ -87,6 +87,13 @@ export class UsersController {
     }
 
     return result;
+  }
+
+  @Get(':userId/hover-card')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Get user info for hover card' })
+  async getHoverCard(@Param('userId') userId: string) {
+    return this.usersService.getHoverCard(userId);
   }
 
   @Patch('profile')

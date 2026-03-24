@@ -58,6 +58,23 @@ export class UsersRepository {
     });
   }
 
+  async findById(id: bigint | string) {
+    return this.prisma.users.findUnique({
+      where: { id: BigInt(id) },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        bio: true,
+        user_location: true,
+        birthday: true,
+        created_at: true,
+      },
+    });
+  }
+
   async findByIds(ids: string[]) {
     return this.prisma.users.findMany({
       where: {

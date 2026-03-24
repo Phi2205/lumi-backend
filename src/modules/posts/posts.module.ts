@@ -23,7 +23,7 @@ import { PostViewService } from './services/post-view.service';
     RedisModule,
     FriendsModule,
     forwardRef(() => RealtimeModule),
-    RecommendModule,
+    forwardRef(() => RecommendModule),
   ],
   controllers: [PostsController],
   providers: [

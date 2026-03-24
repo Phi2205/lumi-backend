@@ -1,5 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RedisService } from 'src/redis/redis.service';
+import { RealtimeService } from '../realtime/realtime.service';
+import { PresenceService } from '../realtime/services/presence.service';
+import { FriendsService } from '../friends/friends.service';
 import {
   parsePaginationParams,
   createPaginationMeta,
@@ -7,7 +11,115 @@ import {
 
 @Injectable()
 export class StoriesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(StoriesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+    @Inject(forwardRef(() => RealtimeService))
+    private realtime: RealtimeService,
+    @Inject(forwardRef(() => PresenceService))
+    private presence: PresenceService,
+    private friends: FriendsService,
+  ) { }
+
+  /**
+   * 🔍 KIỂM TRA USER CÓ STORY ACTIVE KHÔNG
+   * Kết hợp Redis cache 24h & Realtime update
+   */
+  async hasStory(userId: string): Promise<boolean> {
+    const cacheKey = `user:has_story:${userId}`;
+
+    try {
+      // 1. Kiểm tra trong Redis cache
+      const cached = await this.redis.get(cacheKey);
+      if (cached !== null) {
+        return cached === 'true';
+      }
+
+      // 2. Nếu không có trong cache, query Database
+      const count = await this.prisma.stories.count({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      const has = count > 0;
+
+      // 3. Lưu vào Redis với TTL 24h (86400s)
+      await this.redis.set(cacheKey, has.toString(), 86400);
+
+      return has;
+    } catch (error) {
+      this.logger.error(`Error in hasStory for user ${userId}:`, error);
+      // Fallback query DB nếu Redis lỗi
+      const count = await this.prisma.stories.count({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+      return count > 0;
+    }
+  }
+
+  /**
+   * 🔔 THÔNG BÁO REALTIME CHO BẠN BÈ KHI CÓ THAY ĐỔI STORY
+   */
+  private async notifyStoryUpdate(userId: string) {
+    try {
+      // 1. Luôn query DB để lấy trạng thái mới nhất (không dùng cache cũ)
+      const count = await this.prisma.stories.count({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      const has = count > 0;
+      const cacheKey = `user:has_story:${userId}`;
+
+      // 2. Force update Redis cache to ensure consistency
+      await this.redis.set(cacheKey, has.toString(), 86400);
+
+      // Lấy danh sách bạn bè
+      const friendIds = await this.friends.getFriendIds(userId);
+      const friendIdStrings = friendIds.map((id) => id.toString());
+
+      // Lấy danh sách toàn bộ ID đang online từ Redis (một lần duy nhất)
+      const allOnlineIds = await this.presence.getOnlineUserIds();
+
+      // Tìm giao điểm: Chỉ lấy bạn bè đang online
+      const onlineFriendIds = friendIdStrings.filter((id) =>
+        allOnlineIds.includes(id),
+      );
+
+      const payload = {
+        userId,
+        hasStory: has,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Gửi event qua socket cho từng người bạn đang online
+      onlineFriendIds.forEach((id) => {
+        // Gửi tới room riêng của user (user_<id> hoặc <id>)
+        console.log(`Notifying story update for user ${userId} to friend ${id}`);
+        this.realtime.emitToUser(`user_${id}`, 'story_status_changed', payload);
+        // this.realtime.emitToUser(id, 'story_status_changed', payload);
+      });
+
+      this.logger.log(`Notified story update for user ${userId} to ${onlineFriendIds.length} online friends (out of ${friendIds.length} total)`);
+    } catch (error) {
+      this.logger.error(`Failed to notify story update for user ${userId}:`, error);
+    }
+  }
 
   // 📸 TẠO STORY MỚI
   async createStory(
@@ -28,7 +140,7 @@ export class StoriesService {
       },
     });
 
-    return {
+    const result = {
       id: story.id.toString(),
       user_id: story.user_id.toString(),
       media_url: story.media_url,
@@ -36,6 +148,14 @@ export class StoriesService {
       expires_at: story.expires_at,
       created_at: story.created_at,
     };
+
+    // Force update cache Redis ngay lập tức
+    await this.redis.set(`user:has_story:${userId}`, 'true', 86400);
+
+    // Trigger realtime update
+    this.notifyStoryUpdate(userId);
+
+    return result;
   }
 
   // 📋 LẤY TẤT CẢ STORIES CỦA USER
@@ -69,16 +189,31 @@ export class StoriesService {
     });
 
     if (!story) {
-      throw new Error('Story not found');
+      return { success: false, message: 'Story not found' };
     }
 
     if (story.user_id.toString() !== userId) {
-      throw new Error('Unauthorized: You can only delete your own stories');
+      throw new Error('Unauthorized');
     }
 
     await this.prisma.stories.delete({
       where: { id: BigInt(storyId) },
     });
+
+    // Kiểm tra xem còn story nào không để update Redis
+    const remainingCount = await this.prisma.stories.count({
+      where: {
+        user_id: BigInt(userId),
+        expires_at: { gt: new Date() },
+      },
+    });
+
+    const hasRemaining = remainingCount > 0;
+    const cacheKey = `user:has_story:${userId}`;
+    await this.redis.set(cacheKey, hasRemaining.toString(), 86400);
+
+    // Thông báo cho bạn bè
+    this.notifyStoryUpdate(userId);
 
     return { success: true, message: 'Story deleted successfully' };
   }

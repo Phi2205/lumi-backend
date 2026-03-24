@@ -19,6 +19,7 @@ import { PostCommentService } from '../../posts/services/post-comment.service';
 import { FriendsService } from '../../friends/friends.service';
 import { UsersService } from '../../users/users.service';
 import { RecommendService } from '../../recommend/recommend.service';
+import { StoriesService } from '../../stories/stories.service';
 
 @WebSocketGateway({
   cors: {
@@ -42,6 +43,8 @@ export class SocketGateway
     private readonly friendsService: FriendsService,
     private readonly usersService: UsersService,
     private readonly recommendService: RecommendService,
+    @Inject(forwardRef(() => StoriesService))
+    private readonly storiesService: StoriesService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
   ) { }
@@ -367,7 +370,15 @@ export class SocketGateway
       if (onlineFriendIds.length === 0) return [];
 
       // 6. Lấy thông tin chi tiết từ Database
-      return await this.usersService.findByIds(onlineFriendIds);
+      const users = await this.usersService.findByIds(onlineFriendIds);
+
+      // 7. Thêm thông tin has_story
+      return await Promise.all(
+        users.map(async (u) => ({
+          ...u,
+          has_story: await this.storiesService.hasStory(u.id.toString()),
+        })),
+      );
     } catch (error) {
       this.logger.error('Error getting online friends:', error);
       return [];
@@ -379,9 +390,12 @@ export class SocketGateway
    */
   private async notifyStatusChange(userId: string, isOnline: boolean) {
     try {
-      const lastOnline = isOnline
-        ? new Date().toISOString()
-        : await this.presenceService.getLastOnline(userId);
+      const [lastOnline, hasStory] = await Promise.all([
+        isOnline
+          ? Promise.resolve(new Date().toISOString())
+          : this.presenceService.getLastOnline(userId),
+        this.storiesService.hasStory(userId),
+      ]);
 
       // Lấy danh sách conversations để biết cần notify vào room nào
       const result =
@@ -392,6 +406,7 @@ export class SocketGateway
         userId,
         is_online: isOnline,
         last_online: lastOnline,
+        has_story: hasStory,
       };
 
       for (const conv of conversations) {

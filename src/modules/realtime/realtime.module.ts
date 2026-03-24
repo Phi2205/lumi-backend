@@ -11,15 +11,17 @@ import { FriendsModule } from '../friends/friends.module';
 import { UsersModule } from '../users/users.module';
 import { RecommendModule } from '../recommend/recommend.module';
 import { RedisModule } from '../../redis/redis.module';
+import { StoriesModule } from '../stories/stories.module';
 
 @Module({
   imports: [
     ConfigModule,
     forwardRef(() => PostsModule),
-    ChatModule,
-    FriendsModule,
-    UsersModule,
-    RecommendModule,
+    forwardRef(() => ChatModule),
+    forwardRef(() => FriendsModule),
+    forwardRef(() => UsersModule),
+    forwardRef(() => RecommendModule),
+    forwardRef(() => StoriesModule),
     RedisModule, // Added RedisModule
     JwtModule.registerAsync({
       imports: [ConfigModule],

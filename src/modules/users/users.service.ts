@@ -4,6 +4,7 @@ import { FriendRequestsRepository } from '../friend-requests/friend-requests.rep
 import { FriendsRepository } from '../friends/friends.repository';
 import { RecommendService } from '../recommend/recommend.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class UsersService {
@@ -11,6 +12,7 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly friendRequestsRepository: FriendRequestsRepository,
     private readonly friendsRepository: FriendsRepository,
+    private readonly redisService: RedisService,
     @Inject(forwardRef(() => RecommendService))
     private readonly recommendService: RecommendService,
   ) { }
@@ -175,6 +177,46 @@ export class UsersService {
         ...updatedUser,
         id: updatedUser.id.toString(),
       },
+    };
+  }
+
+  async getHoverCard(userId: string) {
+    const cacheKey = `user:hover_card:${userId}`;
+    const cachedData = await this.redisService.get(cacheKey);
+    if (cachedData) {
+      return {
+        success: true,
+        message: 'Hover card fetched from cache',
+        data: JSON.parse(cachedData),
+      };
+    }
+
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+        data: null,
+      };
+    }
+
+    const friendCount = await this.friendsRepository.countFriends(user.id);
+
+    const result = {
+      id: user.id.toString(),
+      name: user.name,
+      username: user.username,
+      avatar_url: user.avatar_url,
+      address: user.user_location?.address || null,
+      friend_count: friendCount,
+    };
+
+    await this.redisService.set(cacheKey, JSON.stringify(result), 3600);
+
+    return {
+      success: true,
+      message: 'Hover card fetched successfully',
+      data: result,
     };
   }
 }

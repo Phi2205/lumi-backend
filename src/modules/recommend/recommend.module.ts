@@ -20,4 +20,4 @@ import { UsersModule } from '../users/users.module';
   providers: [RecommendService],
   exports: [RecommendService],
 })
-export class RecommendModule {}
+export class RecommendModule { }
