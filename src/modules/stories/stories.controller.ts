@@ -208,4 +208,37 @@ export class StoriesController {
   async deleteStory(@Param('id') id: string, @Req() req: any) {
     return this.storiesService.deleteStory(id, req.user.userId);
   }
+
+  @ApiOperation({ summary: 'Record a story view' })
+  @ApiResponse({ status: 200, description: 'View recorded' })
+  @Post(':id/view')
+  async recordView(@Param('id') id: string, @Req() req: any) {
+    return this.storiesService.viewStory(id, req.user.userId);
+  }
+
+  @ApiOperation({
+    summary: 'Get story viewers (Cursor pagination, owner only)',
+  })
+  @ApiResponse({ status: 200, description: 'List of viewers' })
+  @Get(':id/viewers')
+  async getStoryViewers(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.storiesService.getStoryViewers(
+      id,
+      req.user.userId,
+      limit ? parseInt(limit) : 20,
+      cursor,
+    );
+  }
+
+  @ApiOperation({ summary: 'Get a flat feed of stories from friends (B1 -> B2)' })
+  @ApiResponse({ status: 200, description: 'List of friend stories' })
+  @Get('friend-feed')
+  async getFriendStoriesFeed(@Req() req: any) {
+    return this.storiesService.getFriendStoriesFeed(req.user.userId);
+  }
 }
