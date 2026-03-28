@@ -238,7 +238,11 @@ export class StoriesController {
   @ApiOperation({ summary: 'Get a flat feed of stories from friends (B1 -> B2)' })
   @ApiResponse({ status: 200, description: 'List of friend stories' })
   @Get('friend-feed')
-  async getFriendStoriesFeed(@Req() req: any) {
-    return this.storiesService.getFriendStoriesFeed(req.user.userId);
+  async getFriendStoriesFeed(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.storiesService.getFriendStoriesFeed(req.user.userId, page, limit);
   }
 }

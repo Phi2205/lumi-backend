@@ -533,147 +533,166 @@ export class StoriesService {
 
   /**
    * 📰 LẤY FEED STORIES (Bản tin Stories của bạn bè)
-   * → Cache feed
-   * → Nếu miss: Query stories chưa hết hạn → Preload seen (Redis) → Sort → Cache lại
+   * Tối ưu:
+   * 1. Chỉ lấy story của bạn bè (DB)
+   * 2. Cache TOÀN BỘ feed đã được sort (Redis)
+   * 3. Phân trang trên dữ liệu đã cache/sort (Memory)
    */
-  async getFriendStoriesFeed(currentUserId: string) {
-    const cacheKey = `user:stories_feed:${currentUserId}`;
-    const cloudName = process.env.CLOUDINARY_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+  async getFriendStoriesFeed(
+    currentUserId: string,
+    page?: string | number,
+    limit?: string | number,
+  ) {
+    const { page: pageNumber, limit: limitNumber } = parsePaginationParams(
+      page,
+      limit,
+    );
 
-    // 1. Kiểm tra cache feed
+    const cacheKey = `user:stories_feed:${currentUserId}`;
+    const cloudName =
+      process.env.CLOUDINARY_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+
+    let fullSortedFeed: any[] = [];
+
+    // 1. Kiểm tra cache feed (Toàn bộ feed)
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        fullSortedFeed = JSON.parse(cached);
       }
     } catch (err) {
-      this.logger.warn(`Redis error in getFriendStoriesFeed for ${currentUserId}:`, err);
+      this.logger.warn(
+        `Redis error in getFriendStoriesFeed for ${currentUserId}:`,
+        err,
+      );
     }
 
-    // 2. Query stories chưa hết hạn (B1)
-    const allActiveStories = await this.prisma.stories.findMany({
-      where: {
-        expires_at: { gt: new Date() },
-      },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar_url: true,
+    // 2. Nếu miss cache, compute lại toàn bộ feed
+    if (fullSortedFeed.length === 0) {
+      // 2.1 Lấy danh sách friendId
+      const friendIds = await this.friends.getFriendIds(currentUserId);
+      const friendIdStrings = friendIds.map((id) => id.toString());
+      const targetUserIds = [...friendIdStrings, currentUserId];
+
+      // 2.2 Query stories từ DB (Chỉ lấy stories của friends và bản thân)
+      const activeStories = await this.prisma.stories.findMany({
+        where: {
+          user_id: {
+            in: targetUserIds.map((id) => BigInt(id)),
+          },
+          expires_at: { gt: new Date() },
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar_url: true,
+            },
           },
         },
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
 
-    // 3. Intersect với friend list (B2)
-    const friendIds = await this.friends.getFriendIds(currentUserId);
-    const friendIdStrings = friendIds.map((id) => id.toString());
-    const friendIdSet = new Set(friendIdStrings);
-    friendIdSet.add(currentUserId); // Bao gồm cả chính mình
+      // 2.3 Preload "seen" status từ Redis
+      const seenKey = `user:seen_stories:${currentUserId}`;
+      const seenStoryIds = await this.redis.smembers(seenKey);
+      const seenSet = new Set(seenStoryIds);
 
-    const friendStories = allActiveStories.filter((story) =>
-      friendIdSet.has(story.user_id.toString()),
-    );
+      // 2.4 Group stories by User
+      const userGroups = new Map<string, any>();
 
-    console.log('friendStories', friendStories);
+      activeStories.forEach((story) => {
+        const storyIdStr = story.id.toString();
+        const userIdStr = story.user_id.toString();
+        const isViewed = seenSet.has(storyIdStr);
 
-    // 4. Preload "seen" status từ Redis
-    const seenKey = `user:seen_stories:${currentUserId}`;
-    const seenStoryIds = await this.redis.smembers(seenKey);
-    const seenSet = new Set(seenStoryIds);
+        if (!userGroups.has(userIdStr)) {
+          userGroups.set(userIdStr, {
+            user: {
+              id: userIdStr,
+              name: story.users.name,
+              username: story.users.username,
+              avatar_url: story.users.avatar_url,
+            },
+            has_unseen: false,
+            latest_story_time: story.created_at,
+            stories: [],
+          });
+        }
 
-    // 5. Group stories by User
-    const userGroups = new Map<string, any>();
+        const group = userGroups.get(userIdStr);
+        if (!isViewed) group.has_unseen = true;
 
-    friendStories.forEach((story) => {
-      const storyIdStr = story.id.toString();
-      const userIdStr = story.user_id.toString();
-      const isViewed = seenSet.has(storyIdStr);
+        if (
+          story.created_at &&
+          (!group.latest_story_time ||
+            new Date(story.created_at) > new Date(group.latest_story_time))
+        ) {
+          group.latest_story_time = story.created_at;
+        }
 
-      if (!userGroups.has(userIdStr)) {
-        userGroups.set(userIdStr, {
-          user: {
-            id: userIdStr,
-            name: story.users.name,
-            username: story.users.username,
-            avatar_url: story.users.avatar_url,
-          },
-          has_unseen: false,
-          latest_story_time: story.created_at,
-          stories: [],
-        });
+        const formattedStory: any = {
+          id: storyIdStr,
+          media_url: story.media_url,
+          media_type: story.media_type,
+          created_at: story.created_at,
+          expires_at: story.expires_at,
+          is_viewed: isViewed,
+        };
+
+        if (story.media_type === 'video' && cloudName) {
+          formattedStory.streaming_url = `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${story.media_url}.m3u8`;
+        }
+
+        group.stories.push(formattedStory);
+      });
+
+      // 2.5 Sort: User có story chưa xem lên trước, sau đó theo thời gian mới nhất
+      fullSortedFeed = Array.from(userGroups.values()).sort((a, b) => {
+        if (a.has_unseen !== b.has_unseen) {
+          return a.has_unseen ? -1 : 1;
+        }
+        const timeA = a.latest_story_time
+          ? new Date(a.latest_story_time).getTime()
+          : 0;
+        const timeB = b.latest_story_time
+          ? new Date(b.latest_story_time).getTime()
+          : 0;
+        return timeB - timeA;
+      });
+
+      // 2.6 Sort stories trong từng group: Cũ -> Mới
+      fullSortedFeed.forEach((group) => {
+        group.stories.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+      });
+
+      // 2.7 Cache lại toàn bộ feed (5 phút)
+      try {
+        await this.redis.set(cacheKey, JSON.stringify(fullSortedFeed), 300);
+      } catch (err) {
+        this.logger.warn(`Failed to set cache in getFriendStoriesFeed:`, err);
       }
-
-      const group = userGroups.get(userIdStr);
-      if (!isViewed) group.has_unseen = true;
-
-      // Cập nhật latest_story_time nếu cần (story hiện tại là newest do orderBy Desc)
-      if (
-        story.created_at &&
-        (!group.latest_story_time ||
-          new Date(story.created_at) > new Date(group.latest_story_time))
-      ) {
-        group.latest_story_time = story.created_at;
-      }
-
-      const formattedStory: any = {
-        id: storyIdStr,
-        media_url: story.media_url,
-        media_type: story.media_type,
-        created_at: story.created_at,
-        expires_at: story.expires_at,
-        is_viewed: isViewed,
-      };
-
-      if (story.media_type === 'video' && cloudName) {
-        formattedStory.streaming_url = `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${story.media_url}.m3u8`;
-      }
-
-      group.stories.push(formattedStory);
-    });
-
-    // 6. Sort: User có story chưa xem (has_unseen = true) lên trước, sau đó sắp xếp theo latest_story_time
-    const sortedFeed = Array.from(userGroups.values()).sort((a, b) => {
-      // Unseen first
-      if (a.has_unseen !== b.has_unseen) {
-        return a.has_unseen ? -1 : 1;
-      }
-      // Then time descending
-      const timeA = a.latest_story_time
-        ? new Date(a.latest_story_time).getTime()
-        : 0;
-      const timeB = b.latest_story_time
-        ? new Date(b.latest_story_time).getTime()
-        : 0;
-      return timeB - timeA;
-    });
-
-    // 7. Sắp xếp các story trong từng User Group theo thời gian Cũ -> Mới (để play story theo đúng trình tự)
-    sortedFeed.forEach((group) => {
-      group.stories.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      );
-    });
-
-    const result = {
-      success: true,
-      message: 'Friend stories feed grouped by user fetched successfully',
-      data: sortedFeed,
-    };
-
-    // 8. Cache lại feed trong 5 phút
-    try {
-      await this.redis.set(cacheKey, JSON.stringify(result), 300);
-    } catch (err) {
-      this.logger.warn(`Failed to set cache in getFriendStoriesFeed:`, err);
     }
 
-    return result;
+    // 3. Áp dụng phân trang trên level User Groups (In-memory)
+    const total = fullSortedFeed.length;
+    const offset = (pageNumber - 1) * limitNumber;
+    const paginatedItems = fullSortedFeed.slice(offset, offset + limitNumber);
+
+    return {
+      success: true,
+      message: 'Friend stories feed grouped by user fetched successfully',
+      data: {
+        items: paginatedItems,
+        pagination: createPaginationMeta(pageNumber, limitNumber, total),
+      },
+    };
   }
 }
