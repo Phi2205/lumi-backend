@@ -364,4 +364,18 @@ export class PostRepository {
       },
     });
   }
+
+  /**
+   * Lấy nhiều post theo danh sách id
+   */
+  async findByIds(ids: (bigint | number | string)[]) {
+    const formattedIds = ids.map((id) => BigInt(id));
+    return this.prisma.posts.findMany({
+      where: { id: { in: formattedIds } },
+      select: {
+        id: true,
+        user_id: true,
+      },
+    });
+  }
 }

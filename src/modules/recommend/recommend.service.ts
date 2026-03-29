@@ -493,6 +493,232 @@ export class RecommendService {
     }
   }
 
+  async getRecommendedReels(userId: string, limit: number = 10): Promise<any> {
+    const queueKey = `recommend_reels_queue:${userId}`;
+    const historyKey = `recommend_reels_history:${userId}`;
+    const redis = this.redisService.getClient();
+    const TTL = 3600; // 1 hour
+
+    // 1. Lấy danh sách recommend hiện tại trong Redis và parse dữ liệu
+    const queueRaw = await redis.lrange(queueKey, 0, -1);
+    let queue: { id: string; seen: boolean }[] = [];
+
+    for (const item of queueRaw) {
+      try {
+        const parsed = JSON.parse(item);
+        if (parsed?.id) queue.push({ id: parsed.id, seen: !!parsed.seen });
+      } catch (e) {
+        queue.push({ id: item, seen: false });
+      }
+    }
+
+    // Đồng bộ trạng thái seen từ DB cho những bài chưa được đánh dấu là seen trong Redis
+    const unseenInQueue = queue.filter(q => !q.seen).map(q => q.id);
+    if (unseenInQueue.length > 0) {
+      const dbViews = await this.prisma.reel_views.findMany({
+        where: {
+          user_id: BigInt(userId),
+          reel_id: { in: unseenInQueue.map(id => BigInt(id)) }
+        },
+        select: { reel_id: true }
+      });
+      const viewedIdsSet = new Set(dbViews.map(v => v.reel_id.toString()));
+
+      if (viewedIdsSet.size > 0) {
+        queue = queue.map(q => {
+          if (!q.seen && viewedIdsSet.has(q.id)) {
+            return { ...q, seen: true };
+          }
+          return q;
+        });
+
+        // Cập nhật lại Redis sau khi đồng bộ
+        await redis.pipeline()
+          .del(queueKey)
+          .rpush(queueKey, ...queue.map(q => JSON.stringify(q)))
+          .expire(queueKey, TTL)
+          .exec();
+      }
+    }
+    console.log('unseenInQueue', unseenInQueue);
+
+    // 2. Tìm danh sách những bài chưa xem (seen_status = false)
+    let unseen = queue.filter((q) => !q.seen);
+
+    // 3. Nếu số lượng bài chưa xem ít hơn limit, gọi Recommend Service để lấy thêm
+    if (unseen.length < limit) {
+      // Lấy history và views DB để loại trừ
+      const [views, historyIds] = await Promise.all([
+        this.prisma.reel_views.findMany({
+          where: { user_id: BigInt(userId) },
+          select: { reel_id: true },
+        }),
+        redis.smembers(historyKey),
+      ]);
+      const allViewedIdsSet = new Set(views.map((v) => v.reel_id.toString()));
+
+      // Tập hợp các ID đang có trong queue để loại trừ luôn
+      const currentQueueIds = new Set(queue.map(q => q.id));
+      const excludeIds = Array.from(new Set([...historyIds, ...allViewedIdsSet, ...currentQueueIds]));
+      const excludeString = excludeIds.join(',').substring(0, 4000);
+
+      try {
+        const response = await firstValueFrom(
+          this.httpService.get(`${this.recommendServiceUrl}/api/recommend-reels/${userId}`, {
+            headers: { 'x-internal-key': this.internalSharedSecret },
+            params: {
+              k: 100,
+              window_days: 30,
+              strategy: 'multi_source',
+              exclude_ids: excludeString,
+            },
+          }),
+        );
+
+        const candidates = response.data.candidates || [];
+        const newIds = candidates
+          .map((r: any) => r.reel_id.toString())
+          .filter(id => !currentQueueIds.has(id)); // Lọc trùng với queue hiện tại
+
+        if (newIds.length > 0) {
+          // Lưu vào history để tránh recommend lại ngay lập tức
+          await redis.sadd(historyKey, ...newIds);
+          await redis.expire(historyKey, TTL);
+
+          // Tạo danh sách mới để rpush vào Redis
+          const newEntries = newIds.map((id) => ({
+            id,
+            seen: allViewedIdsSet.has(id),
+          }));
+
+          await redis
+            .pipeline()
+            .rpush(queueKey, ...newEntries.map((q) => JSON.stringify(q)))
+            .expire(queueKey, TTL)
+            .exec();
+
+          // Cập nhật biến queue và unseen trong memory để dùng cho Step 4
+          queue = [...queue, ...newEntries];
+          unseen = queue.filter((q) => !q.seen);
+        }
+      } catch (error) {
+        console.error('[getRecommendedReels] Error prefetching recommendations:', error.message);
+      }
+    }
+
+    // 4. Trả về danh sách reels
+    if (unseen.length > 0) {
+      const selected = unseen.slice(0, limit);
+      const selectedIds = selected.map((s) => s.id);
+
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME;
+
+      // Lấy thông tin chi tiết các bài reels và kiểm tra like của user
+      const [reels, userLikes] = await Promise.all([
+        this.prisma.reels.findMany({
+          where: { id: { in: selectedIds.map((id) => BigInt(id)) } },
+          include: {
+            user: { select: { id: true, username: true, name: true, avatar_url: true } },
+          },
+        }),
+        this.prisma.reel_likes.findMany({
+          where: {
+            user_id: BigInt(userId),
+            reel_id: { in: selectedIds.map((id) => BigInt(id)) },
+          },
+          select: { reel_id: true },
+        }),
+      ]);
+
+      const likedReelIds = new Set(userLikes.map((l) => l.reel_id.toString()));
+      const reelsMap = new Map(reels.map((r) => [r.id.toString(), r]));
+
+      const orderedReels = await Promise.all(
+        selectedIds.map(async (id) => {
+          const reel = reelsMap.get(id);
+          if (!reel) return null;
+
+          const userHasStory = await this.hasStory(reel.user.id.toString());
+
+          return {
+            id: reel.id.toString(),
+            user_id: reel.user_id.toString(),
+            video_url: reel.video_url,
+            public_id: reel.public_id,
+            thumbnail_url: reel.thumbnail_url,
+            caption: reel.caption,
+            music_name: reel.music_name,
+            duration: reel.duration,
+            like_count: reel.like_count || 0,
+            comment_count: reel.comment_count || 0,
+            share_count: reel.share_count || 0,
+            view_count: reel.view_count || 0,
+            created_at: reel.created_at,
+            has_liked: likedReelIds.has(reel.id.toString()),
+            user: {
+              id: reel.user.id.toString(),
+              username: reel.user.username,
+              name: reel.user.name,
+              avatar_url: reel.user.avatar_url,
+              has_story: userHasStory,
+            },
+            streaming_url: cloudName
+              ? `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${reel.public_id}.m3u8`
+              : null,
+          };
+        }),
+      ).then((results) => results.filter((r) => r !== null));
+
+      return {
+        success: true,
+        message: 'Recommended reels fetched successfully',
+        data: orderedReels,
+      };
+    }
+
+    return {
+      success: true,
+      message: 'No recommended reels found',
+      data: [],
+    };
+  }
+
+  async syncSeenReelsStatusInQueue(userId: string, targetReelIds: string[]) {
+    const queueKey = `recommend_reels_queue:${userId}`;
+    const redis = this.redisService.getClient();
+    const TTL = 3600;
+
+    const rawQueue = await redis.lrange(queueKey, 0, -1);
+    if (rawQueue.length === 0) return;
+
+    let modified = false;
+    const targetSet = new Set(targetReelIds);
+    const updatedQueue = rawQueue.map((item) => {
+      try {
+        const parsed = JSON.parse(item);
+        if (targetSet.has(parsed.id) && !parsed.seen) {
+          modified = true;
+          return JSON.stringify({ ...parsed, seen: true });
+        }
+        return item;
+      } catch {
+        if (targetSet.has(item)) {
+          modified = true;
+          return JSON.stringify({ id: item, seen: true });
+        }
+        return item;
+      }
+    });
+
+    if (modified) {
+      await redis.pipeline()
+        .del(queueKey)
+        .rpush(queueKey, ...updatedQueue)
+        .expire(queueKey, TTL)
+        .exec();
+    }
+  }
+
   async clearRecommendCache(userId: string) {
     const queueKey = `recommend_queue:${userId}`;
     const historyKey = `recommend_history:${userId}`;

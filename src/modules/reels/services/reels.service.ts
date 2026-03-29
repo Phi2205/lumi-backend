@@ -8,7 +8,7 @@ export class ReelsService {
   constructor(
     private readonly reelsRepository: ReelsRepository,
     private readonly reelLikeRepository: ReelLikeRepository,
-  ) {}
+  ) { }
 
   async createReel(
     userId: string,
@@ -122,5 +122,49 @@ export class ReelsService {
       nextCursor,
       hasMore: reels.length === limit,
     };
+  }
+
+  async getReelById(
+    reelId: string | number | bigint,
+    requestingUserId?: string | number | bigint,
+  ) {
+    const reel = await this.reelsRepository.findById(BigInt(reelId));
+
+    if (!reel) {
+      return {
+        success: false,
+        message: 'Reel not found',
+        data: null,
+      };
+    }
+
+    const hasLiked = requestingUserId
+      ? await this.reelLikeRepository.checkLike(reel.id, BigInt(requestingUserId))
+      : false;
+
+    const cloudName =
+      process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME;
+
+    return {
+      success: true,
+      message: 'Get reel successfully',
+      data: {
+        ...reel,
+        id: reel.id.toString(),
+        user_id: reel.user_id.toString(),
+        has_liked: hasLiked,
+        user: {
+          ...reel.user,
+          id: reel.user.id.toString(),
+        },
+        streaming_url: cloudName
+          ? `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${reel.public_id}.m3u8`
+          : null,
+      },
+    };
+  }
+
+  async incrementViewCount(id: string | number | bigint) {
+    return this.reelsRepository.incrementViewCount(id);
   }
 }

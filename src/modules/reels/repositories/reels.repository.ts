@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ReelsRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(data: {
     user_id: bigint;
@@ -95,6 +95,13 @@ export class ReelsRepository {
     return (tx || this.prisma).reels.update({
       where: { id: BigInt(id) },
       data: { comment_count: { decrement: 1 } },
+    });
+  }
+
+  async incrementViewCount(id: bigint | number | string) {
+    return this.prisma.reels.update({
+      where: { id: BigInt(id) },
+      data: { view_count: { increment: 1 } },
     });
   }
 }

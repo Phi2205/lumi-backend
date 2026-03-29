@@ -166,6 +166,10 @@ export class PostService {
     };
   }
 
+  async getPostsByIds(ids: (string | number | bigint)[]) {
+    return this.postRepository.findByIds(ids);
+  }
+
   async markPostsAsSeen(postIds: (string | number)[], userId: string | number) {
     if (!postIds.length) return;
     const key = `user:${userId}:seen_posts`;

@@ -233,6 +233,7 @@ model users {
   reel_comments                       reel_comments[]
   reel_likes                          reel_likes[]
   reels                               reels[]
+  reel_views                          reel_views[]
   stories                             stories[]
   story_views                         story_views[]
   user_location                       user_locations?
@@ -268,10 +269,22 @@ model reels {
   updated_at    DateTime?       @updatedAt @db.Timestamp(6)
   reel_comments reel_comments[]
   reel_likes    reel_likes[]
+  reel_views    reel_views[]
   user          users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
   @@index([created_at(sort: Desc)])
+}
+
+model reel_views {
+  reel_id   BigInt
+  user_id   BigInt
+  viewed_at DateTime? @default(now()) @db.Timestamp(6)
+  reel      reels     @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([reel_id, user_id])
+  @@map("reel_views")
 }
 
 model reel_likes {

@@ -117,7 +117,38 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Post liked/unliked successfully' })
   async toggleLike(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
-    return this.postLikeService.toggleLike(id, userId);
+    const result = await this.postLikeService.toggleLike(id, userId);
+
+    // ─── Gửi event tương tác xuống hệ thống CF ───
+    if (result.status === 'liked') {
+      try {
+        const postResult = await this.postService.getPostById(id, userId);
+        if (postResult.success && postResult.data) {
+          const targetUserId = postResult.data.user_id;
+
+          if (targetUserId !== userId.toString()) {
+            this.recommendService
+              .logEvent({
+                actor_user_id: userId,
+                target_user_id: targetUserId,
+                event_type: 'like_post',
+                timestamp: new Date().toISOString(),
+                content_id: id,
+                metadata: {
+                  source: 'posts_controller',
+                },
+              })
+              .catch((err) =>
+                console.error('Failed to log like_post event to CF:', err.message),
+              );
+          }
+        }
+      } catch (error) {
+        console.error('Error logging like interaction for post:', error);
+      }
+    }
+
+    return result;
   }
 
   @Get(':id/likes')
@@ -156,6 +187,34 @@ export class PostsController {
     this.recommendService.syncSeenStatusInQueue(userId, postIds).catch((err) =>
       console.error('Failed to sync seen status in queue:', err.message),
     );
+
+    // ─── Log event view_post cho từng post để gửi sang hệ thống CF ───
+    try {
+      const posts = await this.postService.getPostsByIds(postIds);
+      const postsMap = new Map(posts.map((p) => [p.id.toString(), p.user_id.toString()]));
+
+      for (const id of postIds) {
+        const targetUserId = postsMap.get(id);
+        if (targetUserId) {
+          this.recommendService
+            .logEvent({
+              actor_user_id: userId,
+              target_user_id: targetUserId,
+              event_type: 'view_post',
+              timestamp: new Date().toISOString(),
+              content_id: id,
+              metadata: {
+                source: 'posts_controller',
+              },
+            })
+            .catch((err) =>
+              console.error(`Failed to log view_post event for ${id} to CF:`, err.message),
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error logging view_post interaction for post:', error);
+    }
 
     return result;
   }
