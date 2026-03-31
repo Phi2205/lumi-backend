@@ -200,6 +200,22 @@ export class UsersService {
     };
   }
 
+  async updateCoverImage(userId: string, coverImageUrl: string) {
+    const updatedUser = await this.usersRepository.updateCoverImage(
+      userId,
+      coverImageUrl,
+    );
+
+    return {
+      success: true,
+      message: 'Cover image updated successfully',
+      data: {
+        ...updatedUser,
+        id: updatedUser.id.toString(),
+      },
+    };
+  }
+
   async getHoverCard(userId: string) {
     const cacheKey = `user:hover_card:${userId}`;
     const cachedData = await this.redisService.get(cacheKey);

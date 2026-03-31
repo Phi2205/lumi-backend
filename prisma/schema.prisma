@@ -214,6 +214,7 @@ model users {
   password_hash                       String
   role                                UserRole                    @default(user)
   avatar_url                          String?
+  cover_image                         String?
   bio                                 String?
   created_at                          DateTime?                   @default(now()) @db.Timestamp(6)
   name                                String                      @db.VarChar(100)
@@ -347,6 +348,18 @@ model user_post_engagement {
   @@index([user_id, engagement_score], map: "idx_upe_user_score")
 }
 
+model user_reel_engagement {
+  user_id             BigInt
+  reel_id             BigInt
+  engagement_score    Float
+  interaction_count   Int
+  last_interaction_at DateTime? @db.Timestamptz(6)
+  event_breakdown     Json      @db.Json
+  updated_at          DateTime  @db.Timestamptz(6)
+
+  @@id([user_id, reel_id])
+}
+
 model user_profile_features {
   user_id                 BigInt    @id @default(autoincrement())
   total_interactions      Int
@@ -355,6 +368,7 @@ model user_profile_features {
   topic_distribution      Json      @db.Json
   last_active_at          DateTime? @db.Timestamptz(6)
   unique_posts_interacted Int
+  unique_reels_interacted Int       @default(0)
   unique_users_interacted Int
   updated_at              DateTime  @db.Timestamptz(6)
 

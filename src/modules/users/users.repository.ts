@@ -24,6 +24,7 @@ export class UsersRepository {
           name: true,
           email: true,
           avatar_url: true,
+          cover_image: true,
           bio: true,
           user_location: true,
           birthday: true,
@@ -50,6 +51,7 @@ export class UsersRepository {
         name: true,
         email: true,
         avatar_url: true,
+        cover_image: true,
         bio: true,
         user_location: true,
         birthday: true,
@@ -67,6 +69,7 @@ export class UsersRepository {
         name: true,
         email: true,
         avatar_url: true,
+        cover_image: true,
         bio: true,
         user_location: true,
         birthday: true,
@@ -117,6 +120,7 @@ export class UsersRepository {
         name: true,
         email: true,
         avatar_url: true,
+        cover_image: true,
         bio: true,
         user_location: true,
         birthday: true,
@@ -137,6 +141,22 @@ export class UsersRepository {
         name: true,
         email: true,
         avatar_url: true,
+      },
+    });
+  }
+
+  async updateCoverImage(userId: bigint | string, coverImageUrl: string) {
+    return this.prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: {
+        cover_image: coverImageUrl,
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        cover_image: true,
       },
     });
   }

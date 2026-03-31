@@ -146,4 +146,38 @@ export class UsersController {
     const userId = req.user.userId;
     return this.usersService.updateAvatar(userId, file.url);
   }
+
+  @Patch('cover-image')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update user cover image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Cover image file (jpg, png, jpeg, webp)',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Cover image updated successfully' })
+  @UseInterceptors(
+    FileInterceptor('file', { storage: cloudinaryProfileStorage }),
+  )
+  async updateCoverImage(
+    @Request() req: any,
+    @UploadedFile()
+    file: Express.Multer.File & { url?: string; public_id?: string },
+  ) {
+    if (!file || !file.url) {
+      throw new Error('File upload failed');
+    }
+
+    const userId = req.user.userId;
+    return this.usersService.updateCoverImage(userId, file.url);
+  }
 }
