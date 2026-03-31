@@ -53,6 +53,7 @@ model follows {
   @@id([follower_id, following_id])
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model messages {
   id                  BigInt                @id @default(autoincrement())
   conversation_id     BigInt
@@ -91,6 +92,17 @@ model post_likes {
   @@id([post_id, user_id])
 }
 
+model post_views {
+  post_id    BigInt
+  user_id    BigInt
+  viewed_at  DateTime? @default(now()) @db.Timestamp(6)
+  posts      posts     @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([post_id, user_id])
+  @@map("post_views")
+}
+
 model posts {
   id               BigInt          @id @default(autoincrement())
   user_id          BigInt
@@ -103,6 +115,7 @@ model posts {
   post_comments    post_comments[]
   post_likes       post_likes[]
   post_media       post_media[]
+  post_views       post_views[]
   original_post    posts?          @relation("PostShares", fields: [original_post_id], references: [id], onUpdate: NoAction)
   shared_posts     posts[]         @relation("PostShares")
   users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -148,6 +161,8 @@ model story_views {
   users     users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([story_id, user_id])
+  @@index([story_id], map: "idx_story_views_story")
+  @@map("story_views")
 }
 
 model friend_requests {
@@ -200,10 +215,9 @@ model users {
   role                                UserRole                    @default(user)
   avatar_url                          String?
   bio                                 String?
-  birthday                            DateTime?                   @db.Date
   created_at                          DateTime?                   @default(now()) @db.Timestamp(6)
   name                                String                      @db.VarChar(100)
-  user_location                       user_locations?
+  birthday                            DateTime?                   @db.Date
   conversation_participants           conversation_participants[]
   follows_follows_follower_idTousers  follows[]                   @relation("follows_follower_idTousers")
   follows_follows_following_idTousers follows[]                   @relation("follows_following_idTousers")
@@ -214,12 +228,15 @@ model users {
   messages                            messages[]
   post_comments                       post_comments[]
   post_likes                          post_likes[]
+  post_views                          post_views[]
   posts                               posts[]
+  reel_comments                       reel_comments[]
+  reel_likes                          reel_likes[]
+  reels                               reels[]
+  reel_views                          reel_views[]
   stories                             stories[]
   story_views                         story_views[]
-  reels                               reels[]
-  reel_likes                          reel_likes[]
-  reel_comments                       reel_comments[]
+  user_location                       user_locations?
 }
 
 model user_locations {
@@ -228,10 +245,121 @@ model user_locations {
   lat        Float?
   lng        Float?
   place_name String?   @db.VarChar(255)
-  address    String?   @db.Text
+  address    String?
   place_id   String?   @db.VarChar(100)
   updated_at DateTime? @updatedAt @db.Timestamp(6)
   user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model reels {
+  id            BigInt          @id @default(autoincrement())
+  user_id       BigInt
+  video_url     String
+  public_id     String          @db.VarChar(255)
+  thumbnail_url String?
+  thumbnail_id  String?         @db.VarChar(255)
+  caption       String?
+  music_name    String?         @db.VarChar(255)
+  duration      Int?
+  like_count    Int             @default(0)
+  comment_count Int             @default(0)
+  share_count   Int             @default(0)
+  view_count    Int             @default(0)
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?       @updatedAt @db.Timestamp(6)
+  reel_comments reel_comments[]
+  reel_likes    reel_likes[]
+  reel_views    reel_views[]
+  user          users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at(sort: Desc)])
+}
+
+model reel_views {
+  reel_id   BigInt
+  user_id   BigInt
+  viewed_at DateTime? @default(now()) @db.Timestamp(6)
+  reel      reels     @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([reel_id, user_id])
+  @@map("reel_views")
+}
+
+model reel_likes {
+  reel_id    BigInt
+  user_id    BigInt
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  reel       reels     @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([reel_id, user_id])
+}
+
+model reel_comments {
+  id             BigInt          @id @default(autoincrement())
+  reel_id        BigInt
+  user_id        BigInt
+  content        String
+  parent_id      BigInt?
+  depth          Int             @default(0)
+  created_at     DateTime?       @default(now()) @db.Timestamp(6)
+  parent_comment reel_comments?  @relation("ReelCommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies        reel_comments[] @relation("ReelCommentReplies")
+  reel           reels           @relation(fields: [reel_id], references: [id], onDelete: Cascade)
+  user           users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([reel_id, created_at(sort: Desc)])
+  @@index([parent_id])
+}
+
+model user_interaction_events {
+  id             Int      @id @default(autoincrement())
+  actor_user_id  Int
+  target_user_id Int
+  event_type     String   @db.VarChar(32)
+  event_value    Float?
+  content_id     Int?
+  session_id     String?
+  occurred_at    DateTime @db.Timestamptz(6)
+  created_at     DateTime @db.Timestamptz(6)
+  meta           Json     @db.Json
+
+  @@index([actor_user_id, occurred_at], map: "idx_uie_actor_time")
+  @@index([actor_user_id, target_user_id, occurred_at], map: "idx_uie_pair_time")
+  @@index([target_user_id, occurred_at], map: "idx_uie_target_time")
+  @@index([event_type, occurred_at], map: "idx_uie_type_time")
+}
+
+model user_post_engagement {
+  user_id             BigInt
+  post_id             BigInt
+  engagement_score    Float
+  interaction_count   Int
+  last_interaction_at DateTime? @db.Timestamptz(6)
+  event_breakdown     Json      @db.Json
+  updated_at          DateTime  @db.Timestamptz(6)
+
+  @@id([user_id, post_id])
+  @@index([user_id, last_interaction_at], map: "idx_upe_last_interaction")
+  @@index([post_id, engagement_score], map: "idx_upe_post_score")
+  @@index([user_id, engagement_score], map: "idx_upe_user_score")
+}
+
+model user_profile_features {
+  user_id                 BigInt    @id @default(autoincrement())
+  total_interactions      Int
+  avg_engagement_score    Float
+  event_type_distribution Json      @db.Json
+  topic_distribution      Json      @db.Json
+  last_active_at          DateTime? @db.Timestamptz(6)
+  unique_posts_interacted Int
+  unique_users_interacted Int
+  updated_at              DateTime  @db.Timestamptz(6)
+
+  @@index([last_active_at], map: "idx_upf_last_active")
+  @@index([total_interactions], map: "idx_upf_total_interactions")
 }
 
 enum ConversationType {
@@ -260,55 +388,4 @@ enum FriendRequestStatus {
 enum UserRole {
   user
   admin
-}
-
-model reels {
-  id            BigInt    @id @default(autoincrement())
-  user_id       BigInt
-  video_url     String    @db.Text
-  public_id     String    @db.VarChar(255)
-  thumbnail_url String?   @db.Text
-  thumbnail_id  String?   @db.VarChar(255)
-  caption       String?   @db.Text
-  music_name    String?   @db.VarChar(255)
-  duration      Int?
-  like_count    Int       @default(0)
-  comment_count Int       @default(0)
-  share_count   Int       @default(0)
-  view_count    Int       @default(0)
-  created_at    DateTime? @default(now()) @db.Timestamp(6)
-  updated_at    DateTime? @updatedAt @db.Timestamp(6)
-  user          users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  reel_likes    reel_likes[]
-  reel_comments reel_comments[]
-
-  @@index([user_id])
-  @@index([created_at(sort: Desc)])
-}
-
-model reel_likes {
-  reel_id    BigInt
-  user_id    BigInt
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  reel       reels     @relation(fields: [reel_id], references: [id], onDelete: Cascade)
-  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@id([reel_id, user_id])
-}
-
-model reel_comments {
-  id             BigInt          @id @default(autoincrement())
-  reel_id        BigInt
-  user_id        BigInt
-  content        String          @db.Text
-  parent_id      BigInt?
-  depth          Int             @default(0)
-  created_at     DateTime?       @default(now()) @db.Timestamp(6)
-  parent_comment reel_comments?  @relation("ReelCommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
-  replies        reel_comments[] @relation("ReelCommentReplies")
-  reel           reels           @relation(fields: [reel_id], references: [id], onDelete: Cascade)
-  user           users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([reel_id, created_at(sort: Desc)])
-  @@index([parent_id])
 }

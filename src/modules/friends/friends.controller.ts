@@ -1,11 +1,19 @@
-import { Controller, Get, Delete, UseGuards, Request, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  UseGuards,
+  Request,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FriendsService } from './friends.service';
 
 @Controller('friends')
 @UseGuards(AuthGuard('jwt'))
 export class FriendsController {
-  constructor(private friendsService: FriendsService) { }
+  constructor(private friendsService: FriendsService) {}
 
   /**
    * Lấy danh sách bạn bè
@@ -37,7 +45,12 @@ export class FriendsController {
     const viewerId = req.user.userId;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.friendsService.getFriendsOfUser(viewerId, targetId, pageNum, limitNum);
+    return this.friendsService.getFriendsOfUser(
+      viewerId,
+      targetId,
+      pageNum,
+      limitNum,
+    );
   }
 
   /**
@@ -45,7 +58,10 @@ export class FriendsController {
    * GET /friends/mutual/:targetId
    */
   @Get('mutual/:targetId')
-  async getMutualFriends(@Request() req: any, @Param('targetId') targetId: string) {
+  async getMutualFriends(
+    @Request() req: any,
+    @Param('targetId') targetId: string,
+  ) {
     const userId = req.user.userId;
     return this.friendsService.getMutualFriends(userId, targetId);
   }
@@ -55,7 +71,10 @@ export class FriendsController {
    * GET /friends/count-with-mutual/:targetId
    */
   @Get('count-with-mutual/:targetId')
-  async getFriendsAndMutualCount(@Request() req: any, @Param('targetId') targetId: string) {
+  async getFriendsAndMutualCount(
+    @Request() req: any,
+    @Param('targetId') targetId: string,
+  ) {
     const viewerId = req.user.userId;
     return this.friendsService.getFriendsAndMutualCount(viewerId, targetId);
   }
@@ -75,7 +94,10 @@ export class FriendsController {
    * GET /friends/:friendId
    */
   @Get(':friendId')
-  async getFriendship(@Request() req: any, @Param('friendId') friendId: string) {
+  async getFriendship(
+    @Request() req: any,
+    @Param('friendId') friendId: string,
+  ) {
     const userId = req.user.userId;
     return this.friendsService.getFriendship(userId, friendId);
   }

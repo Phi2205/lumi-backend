@@ -9,8 +9,8 @@ try {
     console.log(`Loading .env from ${envPath}`);
     const parsed = dotenv.parse(fs.readFileSync(envPath));
     for (const k of Object.keys(parsed)) {
-       // override process.env
-       process.env[k] = parsed[k];
+      // override process.env
+      process.env[k] = parsed[k];
     }
   } else {
     console.log('.env file not found');

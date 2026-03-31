@@ -7,7 +7,7 @@ export class MessageService {
   constructor(
     private messageRepository: MessageRepository,
     private participationRepo: ConversationParticipantsRepository,
-  ) { }
+  ) {}
 
   /**
    * Gửi tin nhắn và cập nhật metadata cuộc trò chuyện
@@ -59,7 +59,10 @@ export class MessageService {
     limit: number = 50,
   ) {
     // 1. Lấy last_seen_message_id từ repository
-    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(conversationId, userId);
+    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(
+      conversationId,
+      userId,
+    );
 
     // 2. Lấy danh sách tin nhắn từ repository
     const messages = await this.messageRepository.findByConversation(
@@ -69,7 +72,9 @@ export class MessageService {
     );
 
     const nextCursor =
-      messages.length === limit ? messages[messages.length - 1].id.toString() : null;
+      messages.length === limit
+        ? messages[messages.length - 1].id.toString()
+        : null;
 
     return {
       success: true,
@@ -87,11 +92,12 @@ export class MessageService {
             name: m.users.name,
             avatar_url: m.users.avatar_url,
           },
-          attachments: m.message_attachments?.map((att) => ({
-            id: att.id.toString(),
-            url: att.url,
-            type: att.file_type,
-          })) || [],
+          attachments:
+            m.message_attachments?.map((att) => ({
+              id: att.id.toString(),
+              url: att.url,
+              type: att.file_type,
+            })) || [],
           is_read: m.id <= lastSeenMessageId,
         })),
         nextCursor,
@@ -208,11 +214,12 @@ export class MessageService {
     userId: string,
     limit: number = 10,
   ) {
-    const { target, before, after } = await this.messageRepository.getMessagesAround(
-      conversationId,
-      messageId,
-      limit,
-    );
+    const { target, before, after } =
+      await this.messageRepository.getMessagesAround(
+        conversationId,
+        messageId,
+        limit,
+      );
 
     if (!target) {
       return {
@@ -222,7 +229,10 @@ export class MessageService {
       };
     }
 
-    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(conversationId, userId);
+    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(
+      conversationId,
+      userId,
+    );
 
     // Xác định hasMore cho hướng Trên (Cũ hơn) và Dưới (Mới hơn)
     const hasMoreAbove = before.length > limit; // "Trên" là phía tin nhắn cũ hơn (ID nhỏ hơn)
@@ -232,7 +242,11 @@ export class MessageService {
     const finalAfter = hasMoreBelow ? after.slice(0, limit) : after;
 
     // Merge tin nhắn: [Mới nhất] -> [Target] -> [Cũ nhất]
-    const allMessages = [...[...finalAfter].reverse(), target, ...[...finalBefore].reverse()];
+    const allMessages = [
+      ...[...finalAfter].reverse(),
+      target,
+      ...[...finalBefore].reverse(),
+    ];
 
     return {
       success: true,
@@ -250,11 +264,12 @@ export class MessageService {
             name: m.users.name,
             avatar_url: m.users.avatar_url,
           },
-          attachments: m.message_attachments?.map((att: any) => ({
-            id: att.id.toString(),
-            url: att.url,
-            type: att.file_type,
-          })) || [],
+          attachments:
+            m.message_attachments?.map((att: any) => ({
+              id: att.id.toString(),
+              url: att.url,
+              type: att.file_type,
+            })) || [],
           is_read: m.id <= lastSeenMessageId,
         })),
         target_id: messageId,
@@ -267,9 +282,21 @@ export class MessageService {
   /**
    * Lấy tin nhắn cũ hơn cursor (Load Older)
    */
-  async getOlderMessages(conversationId: string, cursor: string, userId: string, limit: number = 20) {
-    const messages = await this.messageRepository.getMessagesBefore(conversationId, cursor, limit);
-    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(conversationId, userId);
+  async getOlderMessages(
+    conversationId: string,
+    cursor: string,
+    userId: string,
+    limit: number = 20,
+  ) {
+    const messages = await this.messageRepository.getMessagesBefore(
+      conversationId,
+      cursor,
+      limit,
+    );
+    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(
+      conversationId,
+      userId,
+    );
 
     return {
       success: true,
@@ -287,14 +314,18 @@ export class MessageService {
             name: m.users.name,
             avatar_url: m.users.avatar_url,
           },
-          attachments: m.message_attachments?.map((att: any) => ({
-            id: att.id.toString(),
-            url: att.url,
-            type: att.file_type,
-          })) || [],
+          attachments:
+            m.message_attachments?.map((att: any) => ({
+              id: att.id.toString(),
+              url: att.url,
+              type: att.file_type,
+            })) || [],
           is_read: m.id <= lastSeenMessageId,
         })),
-        nextCursor: messages.length === limit ? messages[messages.length - 1].id.toString() : null,
+        nextCursor:
+          messages.length === limit
+            ? messages[messages.length - 1].id.toString()
+            : null,
         hasMore: messages.length === limit,
       },
     };
@@ -303,9 +334,21 @@ export class MessageService {
   /**
    * Lấy tin nhắn mới hơn cursor (Load Newer)
    */
-  async getNewerMessages(conversationId: string, cursor: string, userId: string, limit: number = 20) {
-    const messages = await this.messageRepository.getMessagesAfter(conversationId, cursor, limit);
-    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(conversationId, userId);
+  async getNewerMessages(
+    conversationId: string,
+    cursor: string,
+    userId: string,
+    limit: number = 20,
+  ) {
+    const messages = await this.messageRepository.getMessagesAfter(
+      conversationId,
+      cursor,
+      limit,
+    );
+    const lastSeenMessageId = await this.participationRepo.getLastSeenMessageId(
+      conversationId,
+      userId,
+    );
 
     return {
       success: true,
@@ -323,14 +366,18 @@ export class MessageService {
             name: m.users.name,
             avatar_url: m.users.avatar_url,
           },
-          attachments: m.message_attachments?.map((att: any) => ({
-            id: att.id.toString(),
-            url: att.url,
-            type: att.file_type,
-          })) || [],
+          attachments:
+            m.message_attachments?.map((att: any) => ({
+              id: att.id.toString(),
+              url: att.url,
+              type: att.file_type,
+            })) || [],
           is_read: m.id <= lastSeenMessageId,
         })),
-        nextCursor: messages.length === limit ? messages[messages.length - 1].id.toString() : null,
+        nextCursor:
+          messages.length === limit
+            ? messages[messages.length - 1].id.toString()
+            : null,
         hasMore: messages.length === limit,
       },
     };

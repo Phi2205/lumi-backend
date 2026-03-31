@@ -1,11 +1,19 @@
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { FriendRequestsRepository } from './friend-requests.repository';
 import { FriendsRepository } from '../friends/friends.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FriendRequestStatus } from '@prisma/client';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
 import { RespondFriendRequestDto } from './dto/respond-friend-request.dto';
-import { parsePaginationParams, createPaginationResponse } from 'src/utils/pagination';
+import {
+  parsePaginationParams,
+  createPaginationResponse,
+} from 'src/utils/pagination';
 
 @Injectable()
 export class FriendRequestsService {
@@ -23,13 +31,18 @@ export class FriendRequestsService {
     page?: string | number,
     limit?: string | number,
   ) {
-    const { page: pageNumber, limit: limitNumber, offset } = parsePaginationParams(page, limit);
-
-    const { data, total } = await this.friendRequestsRepository.getFriendRequestsByReceiver(
-      receiverId,
-      limitNumber,
+    const {
+      page: pageNumber,
+      limit: limitNumber,
       offset,
-    );
+    } = parsePaginationParams(page, limit);
+
+    const { data, total } =
+      await this.friendRequestsRepository.getFriendRequestsByReceiver(
+        receiverId,
+        limitNumber,
+        offset,
+      );
 
     // Serialize data: convert BigInt to string và format response
     const serializedData = data.map((request) => ({
@@ -48,7 +61,12 @@ export class FriendRequestsService {
       },
     }));
 
-    const paginated = createPaginationResponse(serializedData, pageNumber, limitNumber, total);
+    const paginated = createPaginationResponse(
+      serializedData,
+      pageNumber,
+      limitNumber,
+      total,
+    );
 
     return {
       success: true,
@@ -85,10 +103,11 @@ export class FriendRequestsService {
     }
 
     // Kiểm tra đã có request từ A → B chưa
-    const existingRequest = await this.friendRequestsRepository.findFriendRequest(
-      requesterId,
-      dto.receiver_id,
-    );
+    const existingRequest =
+      await this.friendRequestsRepository.findFriendRequest(
+        requesterId,
+        dto.receiver_id,
+      );
     if (existingRequest) {
       if (existingRequest.status === 'pending') {
         throw new ConflictException('Friend request already sent');
@@ -99,10 +118,13 @@ export class FriendRequestsService {
         if (existingRequest.responded_at) {
           const cooldownHours = 24;
           const cooldownMs = cooldownHours * 60 * 60 * 1000;
-          const timeSinceRejection = Date.now() - existingRequest.responded_at.getTime();
+          const timeSinceRejection =
+            Date.now() - existingRequest.responded_at.getTime();
 
           if (timeSinceRejection < cooldownMs) {
-            const remainingHours = Math.ceil((cooldownMs - timeSinceRejection) / (60 * 60 * 1000));
+            const remainingHours = Math.ceil(
+              (cooldownMs - timeSinceRejection) / (60 * 60 * 1000),
+            );
             throw new BadRequestException(
               `Please wait ${remainingHours} more hour(s) before resending the friend request.`,
             );
@@ -110,10 +132,11 @@ export class FriendRequestsService {
         }
 
         // Update lại request cũ về pending (resend)
-        const updatedRequest = await this.friendRequestsRepository.resetFriendRequestToPending(
-          requesterId,
-          dto.receiver_id,
-        );
+        const updatedRequest =
+          await this.friendRequestsRepository.resetFriendRequestToPending(
+            requesterId,
+            dto.receiver_id,
+          );
 
         return {
           success: true,
@@ -132,10 +155,11 @@ export class FriendRequestsService {
     }
 
     // Kiểm tra đã có request từ B → A chưa
-    const reverseRequest = await this.friendRequestsRepository.findReverseFriendRequest(
-      requesterId,
-      dto.receiver_id,
-    );
+    const reverseRequest =
+      await this.friendRequestsRepository.findReverseFriendRequest(
+        requesterId,
+        dto.receiver_id,
+      );
 
     // LOGIC ĐẶC BIỆT: Nếu B đã gửi request cho A (PENDING), thì A gửi cho B = accept
     if (reverseRequest && reverseRequest.status === 'pending') {
@@ -146,11 +170,17 @@ export class FriendRequestsService {
           requesterId,
           'accepted',
         ),
-        this.friendRequestsRepository.createFriendRequest(requesterId, dto.receiver_id),
+        this.friendRequestsRepository.createFriendRequest(
+          requesterId,
+          dto.receiver_id,
+        ),
       ]);
 
       // Tạo friendship (2 chiều)
-      await this.friendsRepository.createFriendship(requesterId, dto.receiver_id);
+      await this.friendsRepository.createFriendship(
+        requesterId,
+        dto.receiver_id,
+      );
 
       // Cập nhật request A→B thành accepted
       await this.friendRequestsRepository.updateFriendRequestStatus(
@@ -171,10 +201,11 @@ export class FriendRequestsService {
     }
 
     // Tạo friend request mới (PENDING)
-    const friendRequest = await this.friendRequestsRepository.createFriendRequest(
-      requesterId,
-      dto.receiver_id,
-    );
+    const friendRequest =
+      await this.friendRequestsRepository.createFriendRequest(
+        requesterId,
+        dto.receiver_id,
+      );
 
     return {
       success: true,
@@ -203,7 +234,9 @@ export class FriendRequestsService {
     }
 
     if (request.status !== 'pending') {
-      throw new BadRequestException(`Friend request is already ${request.status}`);
+      throw new BadRequestException(
+        `Friend request is already ${request.status}`,
+      );
     }
 
     const requesterIdBigInt = BigInt(dto.requester_id);
@@ -263,7 +296,9 @@ export class FriendRequestsService {
     }
 
     if (request.status !== 'pending') {
-      throw new BadRequestException(`Friend request is already ${request.status}`);
+      throw new BadRequestException(
+        `Friend request is already ${request.status}`,
+      );
     }
 
     // Cập nhật status thành rejected
@@ -295,11 +330,16 @@ export class FriendRequestsService {
     }
 
     if (request.status !== 'pending') {
-      throw new BadRequestException(`Cannot cancel friend request with status: ${request.status}`);
+      throw new BadRequestException(
+        `Cannot cancel friend request with status: ${request.status}`,
+      );
     }
 
     // Xóa friend request
-    await this.friendRequestsRepository.deleteFriendRequest(requesterId, dto.receiver_id);
+    await this.friendRequestsRepository.deleteFriendRequest(
+      requesterId,
+      dto.receiver_id,
+    );
 
     return {
       success: true,
@@ -307,6 +347,4 @@ export class FriendRequestsService {
       status: 'none',
     };
   }
-
-
 }

@@ -1,7 +1,28 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UploadedFiles, UseGuards, UseInterceptors, Inject, forwardRef, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+  Inject,
+  forwardRef,
+  Delete,
+} from '@nestjs/common';
 import { SocketGateway } from 'src/modules/realtime/gateways/socket.gateway';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { PostService } from '../services/post.service';
 import { PostLikeService } from '../services/post-like.service';
@@ -9,6 +30,8 @@ import { CreatePostDto } from '../dto/create-post.dto';
 import { cloudinaryPostStorage } from 'src/config/multer.config';
 
 import { PostCommentService } from '../services/post-comment.service';
+import { PostViewService } from '../services/post-view.service';
+import { RecommendService } from 'src/modules/recommend/recommend.service';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -19,9 +42,12 @@ export class PostsController {
     private postService: PostService,
     private postLikeService: PostLikeService,
     private postCommentService: PostCommentService,
+    private postViewService: PostViewService,
+    @Inject(forwardRef(() => RecommendService))
+    private recommendService: RecommendService,
     @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
   @ApiResponse({ status: 201, description: 'Post created' })
@@ -42,11 +68,14 @@ export class PostsController {
       },
     },
   })
-  @UseInterceptors(FilesInterceptor('files', 10, { storage: cloudinaryPostStorage }))
+  @UseInterceptors(
+    FilesInterceptor('files', 10, { storage: cloudinaryPostStorage }),
+  )
   async create(
     @Req() req: any,
     @Body() dto: CreatePostDto,
-    @UploadedFiles() files: Array<Express.Multer.File & { url?: string; public_id?: string }>,
+    @UploadedFiles()
+    files: Array<Express.Multer.File & { url?: string; public_id?: string }>,
   ) {
     const userId = req.user.userId;
     const media =
@@ -72,7 +101,10 @@ export class PostsController {
     @Req() req: any,
   ) {
     const userId = req.user.userId;
-    const result = await this.postCommentService.deleteComment(commentId, userId);
+    const result = await this.postCommentService.deleteComment(
+      commentId,
+      userId,
+    );
 
     // Broadcast to realtime gateway
     this.socketGateway.broadcastDeleteComment(id, commentId);
@@ -80,13 +112,43 @@ export class PostsController {
     return result;
   }
 
-
   @Post(':id/like')
   @ApiOperation({ summary: 'Toggle like a post' })
   @ApiResponse({ status: 200, description: 'Post liked/unliked successfully' })
   async toggleLike(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
-    return this.postLikeService.toggleLike(id, userId);
+    const result = await this.postLikeService.toggleLike(id, userId);
+
+    // ─── Gửi event tương tác xuống hệ thống CF ───
+    if (result.status === 'liked') {
+      try {
+        const postResult = await this.postService.getPostById(id, userId);
+        if (postResult.success && postResult.data) {
+          const targetUserId = postResult.data.user_id;
+
+          if (targetUserId !== userId.toString()) {
+            this.recommendService
+              .logEvent({
+                actor_user_id: userId,
+                target_user_id: targetUserId,
+                event_type: 'like_post',
+                timestamp: new Date().toISOString(),
+                content_id: id,
+                metadata: {
+                  source: 'posts_controller',
+                },
+              })
+              .catch((err) =>
+                console.error('Failed to log like_post event to CF:', err.message),
+              );
+          }
+        }
+      } catch (error) {
+        console.error('Error logging like interaction for post:', error);
+      }
+    }
+
+    return result;
   }
 
   @Get(':id/likes')
@@ -119,8 +181,42 @@ export class PostsController {
   @ApiResponse({ status: 200, description: 'Posts marked as seen' })
   async markAsSeen(@Body('postIds') postIds: string[], @Req() req: any) {
     const userId = req.user.userId;
-    await this.postService.markPostsAsSeen(postIds, userId);
-    return { success: true, message: 'Posts marked as seen' };
+    const result = await this.postViewService.markAsSeen(postIds, userId);
+
+    // Đồng bộ tức thì với queue recommend trong Redis
+    this.recommendService.syncSeenStatusInQueue(userId, postIds).catch((err) =>
+      console.error('Failed to sync seen status in queue:', err.message),
+    );
+
+    // ─── Log event view_post cho từng post để gửi sang hệ thống CF ───
+    try {
+      const posts = await this.postService.getPostsByIds(postIds);
+      const postsMap = new Map(posts.map((p) => [p.id.toString(), p.user_id.toString()]));
+
+      for (const id of postIds) {
+        const targetUserId = postsMap.get(id);
+        if (targetUserId) {
+          this.recommendService
+            .logEvent({
+              actor_user_id: userId,
+              target_user_id: targetUserId,
+              event_type: 'view_post',
+              timestamp: new Date().toISOString(),
+              content_id: id,
+              metadata: {
+                source: 'posts_controller',
+              },
+            })
+            .catch((err) =>
+              console.error(`Failed to log view_post event for ${id} to CF:`, err.message),
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error logging view_post interaction for post:', error);
+    }
+
+    return result;
   }
 
   @Get('unseen')
@@ -133,6 +229,63 @@ export class PostsController {
   ) {
     const userId = req.user.userId;
     return this.postService.getUnseenPosts(userId, page, limit);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get posts of current user' })
+  @ApiResponse({ status: 200, description: 'List of posts by current user' })
+  async getMyPosts(
+    @Req() req: any,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = req.user.userId;
+    const result = await this.postService.getUserPosts(
+      userId,
+      userId,
+      cursor,
+      limit ? parseInt(limit) : 10,
+      true,
+    );
+
+    return {
+      success: true,
+      message: 'My posts fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get posts of a user' })
+  @ApiResponse({ status: 200, description: 'List of posts by user' })
+  async getUserPosts(
+    @Param('userId') userId: string,
+    @Req() req: any,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const viewerUserId = req.user.userId;
+    const result = await this.postService.getUserPosts(
+      userId,
+      viewerUserId,
+      cursor,
+      limit ? parseInt(limit) : 10,
+      true,
+    );
+
+    return {
+      success: true,
+      message: 'User posts fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('recommendations')
+  @ApiOperation({ summary: 'Get recommended posts for the user' })
+  @ApiResponse({ status: 200, description: 'List of recommended posts' })
+  async getRecommendPosts(@Req() req: any, @Query('limit') limit: number = 10) {
+    const userId = req.user.userId;
+    return this.recommendService.getRecommendedPosts(userId, +limit);
   }
 
   @Get(':id')
@@ -193,8 +346,40 @@ export class PostsController {
     // Broadcast to realtime gateway
     this.socketGateway.broadcastComment(postId, result.data);
 
+    // ─── Gửi event tương tác xuống hệ thống CF ───
+    try {
+      // Lấy thông tin post để biết ai là target (owner)
+      const postResult = await this.postService.getPostById(postId, userId);
+      if (postResult.success && postResult.data) {
+        const targetUserId = postResult.data.user_id;
+
+        // Chỉ log nếu người comment khác người sở hữu post
+        if (targetUserId !== userId.toString()) {
+          this.recommendService
+            .logEvent({
+              actor_user_id: userId,
+              target_user_id: targetUserId,
+              event_type: 'comment_post',
+              timestamp: new Date().toISOString(),
+              content_id: postId,
+              metadata: {
+                commentId: result.data.id,
+                source: 'posts_controller',
+              },
+            })
+            .catch((err) =>
+              console.error('Failed to log comment_post event to CF:', err.message),
+            );
+        }
+        console.log('Commented on post:', postId);
+      }
+    } catch (error) {
+      console.error('Error logging comment interaction:', error);
+    }
+
     return result;
   }
+
 
   // ─── Share ───────────────────────────────────────────────────────────────────
 
@@ -204,7 +389,11 @@ export class PostsController {
     schema: {
       type: 'object',
       properties: {
-        content: { type: 'string', nullable: true, description: 'Nội dung kèm khi share (tuỳ chọn)' },
+        content: {
+          type: 'string',
+          nullable: true,
+          description: 'Nội dung kèm khi share (tuỳ chọn)',
+        },
       },
     },
   })
@@ -236,7 +425,10 @@ export class PostsController {
 
   @Get(':id/shares')
   @ApiOperation({ summary: 'Get all shares of a post' })
-  @ApiResponse({ status: 200, description: 'List of users who shared the post' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users who shared the post',
+  })
   async getPostShares(
     @Param('id') postId: string,
     @Query('page') page: number = 1,

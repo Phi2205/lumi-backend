@@ -47,16 +47,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     // Nếu không phải public, thực hiện JWT authentication
     const result = super.canActivate(context);
-    
+
     // Handle different return types
     if (result instanceof Promise) {
       return result;
     }
-    
+
     if (result instanceof Observable) {
       return firstValueFrom(result);
     }
-    
+
     // Boolean case
     return Promise.resolve(result);
   }

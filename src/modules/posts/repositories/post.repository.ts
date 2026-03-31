@@ -2,10 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
-
 @Injectable()
 export class PostRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tạo post (hỗ trợ tạo nhiều media thông qua relation post_media)
@@ -25,14 +24,14 @@ export class PostRepository {
         content: data.content ?? null,
         ...(data.media?.length
           ? {
-              post_media: {
-                create: data.media.map((m, idx) => ({
-                  media_url: m.media_url,
-                  media_type: m.media_type,
-                  order: m.order ?? idx,
-                })),
-              },
-            }
+            post_media: {
+              create: data.media.map((m, idx) => ({
+                media_url: m.media_url,
+                media_type: m.media_type,
+                order: m.order ?? idx,
+              })),
+            },
+          }
           : {}),
       },
       include: {
@@ -64,19 +63,55 @@ export class PostRepository {
   }
 
   /**
-   * Lấy danh sách post của 1 user
+   * Lấy danh sách post của 1 user (bao gồm cả bài share)
    */
   async findByUserId(
     userId: bigint | number | string,
-    skip?: number,
-    take?: number,
+    cursor?: string,
+    limit: number = 10,
+    originalOnly: boolean = false,
   ) {
     return this.prisma.posts.findMany({
+      where: {
+        user_id: BigInt(userId),
+        ...(originalOnly ? { original_post_id: null } : {}),
+        ...(cursor ? { id: { lt: BigInt(cursor) } } : {}),
+      },
+      include: {
+        post_media: { orderBy: { order: 'asc' } },
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            avatar_url: true,
+          },
+        },
+        original_post: {
+          include: {
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
+            },
+            post_media: { orderBy: { order: 'asc' } },
+          },
+        },
+      },
+      orderBy: { id: 'desc' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Đếm tổng số post của 1 user
+   */
+  async countByUserId(userId: bigint | number | string) {
+    return this.prisma.posts.count({
       where: { user_id: BigInt(userId) },
-      include: { post_media: { orderBy: { order: 'asc' } } },
-      orderBy: { created_at: 'desc' },
-      skip,
-      take,
     });
   }
 
@@ -181,11 +216,14 @@ export class PostRepository {
   /**
    * Chia sẻ một bài post — tạo post mới với original_post_id trỏ về bài gốc
    */
-  async sharePost(data: {
-    user_id: bigint | number | string;
-    original_post_id: bigint | number | string;
-    content?: string | null;
-  }, tx?: Prisma.TransactionClient) {
+  async sharePost(
+    data: {
+      user_id: bigint | number | string;
+      original_post_id: bigint | number | string;
+      content?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
     return (tx || this.prisma).posts.create({
       data: {
         user_id: BigInt(data.user_id),
@@ -199,7 +237,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -228,7 +271,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -275,7 +323,12 @@ export class PostRepository {
         original_post: {
           include: {
             users: {
-              select: { id: true, username: true, name: true, avatar_url: true },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
             },
             post_media: { orderBy: { order: 'asc' } },
           },
@@ -311,6 +364,18 @@ export class PostRepository {
       },
     });
   }
+
+  /**
+   * Lấy nhiều post theo danh sách id
+   */
+  async findByIds(ids: (bigint | number | string)[]) {
+    const formattedIds = ids.map((id) => BigInt(id));
+    return this.prisma.posts.findMany({
+      where: { id: { in: formattedIds } },
+      select: {
+        id: true,
+        user_id: true,
+      },
+    });
+  }
 }
-
-

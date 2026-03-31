@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class FriendsRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Kiểm tra 2 users đã là bạn chưa
@@ -178,7 +178,12 @@ export class FriendsRepository {
   /**
    * Lấy danh sách bạn bè của targetId, ưu tiên bạn chung với viewerId
    */
-  async getFriendsWithMutualPriority(viewerId: string, targetId: string, skip: number, take: number) {
+  async getFriendsWithMutualPriority(
+    viewerId: string,
+    targetId: string,
+    skip: number,
+    take: number,
+  ) {
     const viewerBigInt = BigInt(viewerId);
     const targetBigInt = BigInt(targetId);
 
@@ -199,10 +204,10 @@ export class FriendsRepository {
       LIMIT ${take} OFFSET ${skip}
     `;
 
-    return result.map(item => ({
+    return result.map((item) => ({
       ...item,
       id: item.id.toString(),
-      is_mutual: Boolean(item.is_mutual)
+      is_mutual: Boolean(item.is_mutual),
     }));
   }
 

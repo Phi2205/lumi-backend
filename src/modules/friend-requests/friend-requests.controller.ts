@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards, Request, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+  Patch,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FriendRequestsService } from './friend-requests.service';
 import { SendFriendRequestDto } from './dto/send-friend-request.dto';
@@ -20,7 +31,11 @@ export class FriendRequestsController {
     @Query('limit') limit?: number,
   ) {
     const receiverId = req.user.userId; // Lấy từ JWT token
-    return this.friendRequestsService.getFriendRequestsByReceiver(receiverId, page, limit);
+    return this.friendRequestsService.getFriendRequestsByReceiver(
+      receiverId,
+      page,
+      limit,
+    );
   }
 
   /**
@@ -29,7 +44,10 @@ export class FriendRequestsController {
    * POST /friend-requests
    */
   @Post()
-  async sendFriendRequest(@Request() req: any, @Body() dto: SendFriendRequestDto) {
+  async sendFriendRequest(
+    @Request() req: any,
+    @Body() dto: SendFriendRequestDto,
+  ) {
     const requesterId = req.user.userId; // Lấy từ JWT token
     return this.friendRequestsService.sendFriendRequest(requesterId, dto);
   }
@@ -40,7 +58,10 @@ export class FriendRequestsController {
    * PUT /friend-requests/accept
    */
   @Patch('accept')
-  async acceptFriendRequest(@Request() req: any, @Body() dto: RespondFriendRequestDto) {
+  async acceptFriendRequest(
+    @Request() req: any,
+    @Body() dto: RespondFriendRequestDto,
+  ) {
     const receiverId = req.user.userId;
     return this.friendRequestsService.acceptFriendRequest(receiverId, dto);
   }
@@ -51,7 +72,10 @@ export class FriendRequestsController {
    * PUT /friend-requests/reject
    */
   @Patch('reject')
-  async rejectFriendRequest(@Request() req: any, @Body() dto: RespondFriendRequestDto) {
+  async rejectFriendRequest(
+    @Request() req: any,
+    @Body() dto: RespondFriendRequestDto,
+  ) {
     const receiverId = req.user.userId;
     return this.friendRequestsService.rejectFriendRequest(receiverId, dto);
   }
@@ -62,9 +86,11 @@ export class FriendRequestsController {
    * DELETE /friend-requests
    */
   @Delete()
-  async cancelFriendRequest(@Request() req: any, @Body() dto: SendFriendRequestDto) {
+  async cancelFriendRequest(
+    @Request() req: any,
+    @Body() dto: SendFriendRequestDto,
+  ) {
     const requesterId = req.user.userId;
     return this.friendRequestsService.cancelFriendRequest(requesterId, dto);
   }
-
 }

@@ -9,10 +9,7 @@ import { ConversationController } from './controllers/conversation.controller';
 import { RealtimeModule } from '../realtime/realtime.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    forwardRef(() => RealtimeModule),
-  ],
+  imports: [PrismaModule, forwardRef(() => RealtimeModule)],
   controllers: [ConversationController],
   providers: [
     ConversationRepository,
@@ -21,6 +18,10 @@ import { RealtimeModule } from '../realtime/realtime.module';
     MessageService,
     ConversationParticipantsRepository,
   ],
-  exports: [ConversationService, MessageService, ConversationParticipantsRepository],
+  exports: [
+    ConversationService,
+    MessageService,
+    ConversationParticipantsRepository,
+  ],
 })
-export class ChatModule { }
+export class ChatModule {}

@@ -5,11 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) { }
 
-  async findByName(
-    name: string | undefined,
-    skip: number,
-    take: number,
-  ) {
+  async findByName(name: string | undefined, skip: number, take: number) {
     const where = name
       ? {
         name: {
@@ -62,20 +58,58 @@ export class UsersRepository {
     });
   }
 
-  async updateProfile(userId: bigint | string, data: { bio?: string; birthday?: Date; user_location?: any }) {
+  async findById(id: bigint | string) {
+    return this.prisma.users.findUnique({
+      where: { id: BigInt(id) },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        bio: true,
+        user_location: true,
+        birthday: true,
+        created_at: true,
+      },
+    });
+  }
+
+  async findByIds(ids: string[]) {
+    return this.prisma.users.findMany({
+      where: {
+        id: {
+          in: ids.map((id) => BigInt(id)),
+        },
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        avatar_url: true,
+      },
+    });
+  }
+
+  async updateProfile(
+    userId: bigint | string,
+    data: { bio?: string; birthday?: Date; user_location?: any },
+  ) {
     const { user_location, ...userData } = data;
     return this.prisma.users.update({
       where: { id: BigInt(userId) },
       data: {
         ...userData,
-        ...(user_location ? {
-          user_location: {
-            upsert: {
-              create: user_location,
-              update: user_location,
-            }
+        ...(user_location
+          ? {
+            user_location: {
+              upsert: {
+                create: user_location,
+                update: user_location,
+              },
+            },
           }
-        } : {})
+          : {}),
       },
       select: {
         id: true,
@@ -91,4 +125,3 @@ export class UsersRepository {
     });
   }
 }
-

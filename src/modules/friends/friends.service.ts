@@ -7,14 +7,18 @@ export class FriendsService {
   constructor(
     private friendsRepository: FriendsRepository,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Lấy danh sách bạn bè
    */
   async getFriendsList(userId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
-    const friends = await this.friendsRepository.getFriendsList(userId, skip, limit);
+    const friends = await this.friendsRepository.getFriendsList(
+      userId,
+      skip,
+      limit,
+    );
     const total = await this.friendsRepository.countFriends(userId);
 
     return {
@@ -41,7 +45,10 @@ export class FriendsService {
    * Lấy thông tin một friendship
    */
   async getFriendship(userId: string, friendId: string) {
-    const friendship = await this.friendsRepository.getFriendship(userId, friendId);
+    const friendship = await this.friendsRepository.getFriendship(
+      userId,
+      friendId,
+    );
 
     if (!friendship) {
       throw new NotFoundException('Friendship not found');
@@ -78,7 +85,10 @@ export class FriendsService {
    * FRIEND → unfriend → NONE
    */
   async unfriend(userId: string, friendId: string) {
-    const areFriends = await this.friendsRepository.areFriends(userId, friendId);
+    const areFriends = await this.friendsRepository.areFriends(
+      userId,
+      friendId,
+    );
 
     if (!areFriends) {
       throw new NotFoundException('You are not friends with this user');
@@ -89,18 +99,22 @@ export class FriendsService {
 
     // Xóa friend requests nếu có
     await Promise.all([
-      this.prisma.friend_requests.deleteMany({
-        where: {
-          requester_id: BigInt(userId),
-          receiver_id: BigInt(friendId),
-        },
-      }).catch(() => null),
-      this.prisma.friend_requests.deleteMany({
-        where: {
-          requester_id: BigInt(friendId),
-          receiver_id: BigInt(userId),
-        },
-      }).catch(() => null),
+      this.prisma.friend_requests
+        .deleteMany({
+          where: {
+            requester_id: BigInt(userId),
+            receiver_id: BigInt(friendId),
+          },
+        })
+        .catch(() => null),
+      this.prisma.friend_requests
+        .deleteMany({
+          where: {
+            requester_id: BigInt(friendId),
+            receiver_id: BigInt(userId),
+          },
+        })
+        .catch(() => null),
     ]);
 
     return {
@@ -120,7 +134,10 @@ export class FriendsService {
    * Lấy danh sách bạn chung
    */
   async getMutualFriends(userId: string, targetId: string) {
-    const mutualFriends = await this.friendsRepository.getMutualFriends(userId, targetId);
+    const mutualFriends = await this.friendsRepository.getMutualFriends(
+      userId,
+      targetId,
+    );
 
     return {
       success: true,
@@ -138,7 +155,12 @@ export class FriendsService {
   /**
    * Lấy danh sách bạn bè của một user bất kỳ
    */
-  async getFriendsOfUser(viewerId: string, targetId: string, page: number = 1, limit: number = 20) {
+  async getFriendsOfUser(
+    viewerId: string,
+    targetId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
     const skip = (page - 1) * limit;
 
     // Nếu viewer xem danh sách của chính mình, gọi hàm cũ cho nhanh
@@ -146,7 +168,12 @@ export class FriendsService {
       return this.getFriendsList(targetId, page, limit);
     }
 
-    const friends = await this.friendsRepository.getFriendsWithMutualPriority(viewerId, targetId, skip, limit);
+    const friends = await this.friendsRepository.getFriendsWithMutualPriority(
+      viewerId,
+      targetId,
+      skip,
+      limit,
+    );
     const total = await this.friendsRepository.countFriends(targetId);
 
     return {

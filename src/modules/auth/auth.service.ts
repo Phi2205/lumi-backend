@@ -1,6 +1,10 @@
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { AuthRepository } from './auth.repository';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -10,7 +14,6 @@ import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
 import { BadRequestException } from '@nestjs/common';
 
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -18,7 +21,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private emailService: EmailService,
-  ) { }
+  ) {}
 
   // Tạo username từ name và đảm bảo unique
   private async generateUniqueUsername(name: string): Promise<string> {
@@ -72,7 +75,8 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'OTP has been sent to your email. Please verify to complete registration.',
+      message:
+        'OTP has been sent to your email. Please verify to complete registration.',
     };
   }
 
@@ -146,14 +150,17 @@ export class AuthService {
   }
 
   // 🎯 TẠO TOKEN
-  private async generateTokens(userId: bigint | number | string, email: string) {
+  private async generateTokens(
+    userId: bigint | number | string,
+    email: string,
+  ) {
     // Lấy user để có role
     const user = await this.authRepository.findById(userId);
 
     const payload = {
       sub: userId.toString(),
       email,
-      role: (user as any)?.role || 'user' // Include role trong JWT payload
+      role: (user as any)?.role || 'user', // Include role trong JWT payload
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
@@ -202,7 +209,9 @@ export class AuthService {
     const storedOTP = await this.redisService.get(otpKey);
 
     if (!storedOTP) {
-      throw new BadRequestException('OTP has expired or is invalid. Please request a new OTP.');
+      throw new BadRequestException(
+        'OTP has expired or is invalid. Please request a new OTP.',
+      );
     }
 
     // Verify OTP
@@ -215,7 +224,9 @@ export class AuthService {
     const registerDataStr = await this.redisService.get(registerDataKey);
 
     if (!registerDataStr) {
-      throw new BadRequestException('Registration data has expired. Please register again.');
+      throw new BadRequestException(
+        'Registration data has expired. Please register again.',
+      );
     }
 
     const registerData = JSON.parse(registerDataStr);
@@ -268,7 +279,9 @@ export class AuthService {
     const registerDataStr = await this.redisService.get(registerDataKey);
 
     if (!registerDataStr) {
-      throw new BadRequestException('No pending registration found for this email. Please register again.');
+      throw new BadRequestException(
+        'No pending registration found for this email. Please register again.',
+      );
     }
 
     // Generate new 6-digit OTP
@@ -302,7 +315,7 @@ export class AuthService {
     // 2. Blacklist access token
     if (accessToken) {
       try {
-        const decoded = this.jwtService.decode(accessToken) as any;
+        const decoded = this.jwtService.decode(accessToken);
         if (decoded?.exp) {
           const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
           if (expiresIn > 0) {
@@ -321,7 +334,7 @@ export class AuthService {
     // 3. Blacklist refresh token
     if (refreshToken) {
       try {
-        const decoded = this.jwtService.decode(refreshToken) as any;
+        const decoded = this.jwtService.decode(refreshToken);
         if (decoded?.exp) {
           const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
           if (expiresIn > 0) {

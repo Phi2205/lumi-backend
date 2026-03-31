@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Param, Query, Req, UseGuards, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+  Body,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ConversationService } from '../services/conversation.service';
 import { MessageService } from '../services/message.service';
 
@@ -12,10 +26,12 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
-  ) { }
+  ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lấy các cuộc trò chuyện của người dùng (có phân trang)' })
+  @ApiOperation({
+    summary: 'Lấy các cuộc trò chuyện của người dùng (có phân trang)',
+  })
   @ApiResponse({ status: 200, description: 'Danh sách cuộc trò chuyện' })
   async getMyConversations(
     @Req() req: any,
@@ -23,12 +39,19 @@ export class ConversationController {
     @Query('limit') limit: number = 10,
   ) {
     const userId = req.user.userId;
-    return this.conversationService.getUserConversationsPaginated(userId, page, limit);
+    return this.conversationService.getUserConversationsPaginated(
+      userId,
+      page,
+      limit,
+    );
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Lấy chi tiết một cuộc trò chuyện' })
-  @ApiResponse({ status: 200, description: 'Thông tin chi tiết cuộc trò chuyện' })
+  @ApiResponse({
+    status: 200,
+    description: 'Thông tin chi tiết cuộc trò chuyện',
+  })
   async getConversationById(@Param('id') id: string, @Req() req: any) {
     return this.conversationService.getConversationById(id, req.user.userId);
   }
@@ -53,11 +76,16 @@ export class ConversationController {
     @Param('recipientId') recipientId: string,
   ) {
     const userId = req.user.userId;
-    return this.conversationService.getOrCreatePrivateConversation(userId, recipientId);
+    return this.conversationService.getOrCreatePrivateConversation(
+      userId,
+      recipientId,
+    );
   }
 
   @Get(':id/media')
-  @ApiOperation({ summary: 'Lấy danh sách media (ảnh/video) của một cuộc trò chuyện' })
+  @ApiOperation({
+    summary: 'Lấy danh sách media (ảnh/video) của một cuộc trò chuyện',
+  })
   @ApiResponse({ status: 200, description: 'Danh sách media' })
   async getMedia(
     @Param('id') id: string,
@@ -77,17 +105,17 @@ export class ConversationController {
     @Query('limit') limit: number = 20,
   ) {
     const offset = (Number(page) - 1) * Number(limit);
-    return this.messageService.searchMessages(
-      id,
-      query,
-      Number(limit),
-      offset,
-    );
+    return this.messageService.searchMessages(id, query, Number(limit), offset);
   }
 
   @Get(':id/messages/:messageId/around')
-  @ApiOperation({ summary: 'Lấy tin nhắn xung quanh một tin nhắn cụ thể (10 trước, 10 sau)' })
-  @ApiResponse({ status: 200, description: 'Danh sách tin nhắn bao gồm context' })
+  @ApiOperation({
+    summary: 'Lấy tin nhắn xung quanh một tin nhắn cụ thể (10 trước, 10 sau)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách tin nhắn bao gồm context',
+  })
   async getMessagesAround(
     @Req() req: any,
     @Param('id') id: string,
@@ -95,7 +123,12 @@ export class ConversationController {
     @Query('limit') limit: number = 10,
   ) {
     const userId = req.user.userId;
-    return this.messageService.getMessagesAround(id, messageId, userId, Number(limit));
+    return this.messageService.getMessagesAround(
+      id,
+      messageId,
+      userId,
+      Number(limit),
+    );
   }
 
   @Get(':id/messages/older')
@@ -107,7 +140,12 @@ export class ConversationController {
     @Query('limit') limit: number = 20,
   ) {
     const userId = req.user.userId;
-    return this.messageService.getOlderMessages(id, cursor, userId, Number(limit));
+    return this.messageService.getOlderMessages(
+      id,
+      cursor,
+      userId,
+      Number(limit),
+    );
   }
 
   @Get(':id/messages/newer')
@@ -119,7 +157,12 @@ export class ConversationController {
     @Query('limit') limit: number = 20,
   ) {
     const userId = req.user.userId;
-    return this.messageService.getNewerMessages(id, cursor, userId, Number(limit));
+    return this.messageService.getNewerMessages(
+      id,
+      cursor,
+      userId,
+      Number(limit),
+    );
   }
 
   @Post('group')

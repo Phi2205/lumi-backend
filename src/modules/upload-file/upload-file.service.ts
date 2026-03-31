@@ -58,9 +58,12 @@ export class UploadFileService {
       ...params,
       timestamp,
     };
-    console.log("paramsToSign", paramsToSign);
+    console.log('paramsToSign', paramsToSign);
 
-    const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      apiSecret,
+    );
 
     return {
       signature,

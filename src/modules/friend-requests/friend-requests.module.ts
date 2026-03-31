@@ -10,5 +10,6 @@ import { FriendsModule } from '../friends/friends.module';
   imports: [PrismaModule, PassportModule, FriendsModule],
   controllers: [FriendRequestsController],
   providers: [FriendRequestsService, FriendRequestsRepository],
+  exports: [FriendRequestsService, FriendRequestsRepository],
 })
 export class FriendRequestsModule {}
