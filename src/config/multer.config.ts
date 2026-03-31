@@ -50,7 +50,23 @@ const reelStorage = new CloudinaryStorage({
   },
 });
 
+const profileStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: 'avatars',
+      resource_type: 'image',
+      allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+      public_id: `${Date.now()}-${file.originalname}`,
+      transformation: [
+        { width: 400, height: 400, crop: 'thumb', gravity: 'face' },
+      ],
+    };
+  },
+});
+
 export const upload = multer({ storage });
 export { storage as cloudinaryStorage };
 export { postStorage as cloudinaryPostStorage };
 export { reelStorage as cloudinaryReelStorage };
+export { profileStorage as cloudinaryProfileStorage };

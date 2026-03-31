@@ -124,4 +124,20 @@ export class UsersRepository {
       },
     });
   }
+
+  async updateAvatar(userId: bigint | string, avatarUrl: string) {
+    return this.prisma.users.update({
+      where: { id: BigInt(userId) },
+      data: {
+        avatar_url: avatarUrl,
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+      },
+    });
+  }
 }

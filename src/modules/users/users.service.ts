@@ -180,6 +180,26 @@ export class UsersService {
     };
   }
 
+  async updateAvatar(userId: string, avatarUrl: string) {
+    const updatedUser = await this.usersRepository.updateAvatar(
+      userId,
+      avatarUrl,
+    );
+
+    // Invalidate hover card cache
+    const cacheKey = `user:hover_card:${userId}`;
+    await this.redisService.del(cacheKey);
+
+    return {
+      success: true,
+      message: 'Avatar updated successfully',
+      data: {
+        ...updatedUser,
+        id: updatedUser.id.toString(),
+      },
+    };
+  }
+
   async getHoverCard(userId: string) {
     const cacheKey = `user:hover_card:${userId}`;
     const cachedData = await this.redisService.get(cacheKey);

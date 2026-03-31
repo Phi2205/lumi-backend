@@ -7,7 +7,7 @@ export class FriendsService {
   constructor(
     private friendsRepository: FriendsRepository,
     private prisma: PrismaService,
-  ) {}
+  ) { }
 
   /**
    * Lấy danh sách bạn bè
@@ -202,6 +202,38 @@ export class FriendsService {
       data: {
         total_friends: totalFriends,
         mutual_friends: mutualFriends,
+      },
+    };
+  }
+
+  /**
+   * Tìm kiếm bạn bè của một user cụ thể
+   */
+  async searchFriendsOfUser(
+    userId: string,
+    query: string,
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const { data, total } = await this.friendsRepository.searchFriendsOfUser(
+      userId,
+      query,
+      limit,
+      skip,
+    );
+
+    return {
+      success: true,
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
       },
     };
   }
