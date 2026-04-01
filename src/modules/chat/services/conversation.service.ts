@@ -442,4 +442,203 @@ export class ConversationService {
       },
     };
   }
+
+  /**
+   * Thêm người tham gia vào nhóm
+   */
+  async addParticipantsToGroup(
+    conversationId: string,
+    adderId: string,
+    userIds: string[],
+  ) {
+    if (!userIds || userIds.length === 0) {
+      return {
+        success: false,
+        message: 'No users provided to add',
+        data: null,
+      };
+    }
+
+    const conversation = await this.conversationRepository.findById(
+      conversationId,
+    );
+
+    if (!conversation) {
+      return {
+        success: false,
+        message: 'Conversation not found',
+        data: null,
+      };
+    }
+
+    if (conversation.type !== 'group') {
+      return {
+        success: false,
+        message: 'Cannot add participants to a private conversation',
+        data: null,
+      };
+    }
+
+    // Check if adder is owner
+    const adderParticipant = conversation.conversation_participants.find(
+      (p: any) => p.user_id.toString() === adderId.toString(),
+    );
+    if (!adderParticipant) {
+      return {
+        success: false,
+        message: 'You are not a participant of this group',
+        data: null,
+      };
+    }
+
+    if (adderParticipant.role !== 'owner') {
+      return {
+        success: false,
+        message: 'Only the group owner can add participants',
+        data: null,
+      };
+    }
+
+    const uniqueUserIds = Array.from(new Set(userIds)).filter(
+      (id) => id !== adderId,
+    );
+
+    const existingParticipantIds = conversation.conversation_participants.map(
+      (p: any) => p.user_id.toString(),
+    );
+    const newParticipantIds = uniqueUserIds.filter(
+      (id) => !existingParticipantIds.includes(id),
+    );
+
+    if (newParticipantIds.length === 0) {
+      return {
+        success: false,
+        message: 'All provided users are already in the group',
+        data: null,
+      };
+    }
+
+    await this.conversationRepository.addParticipants(
+      conversationId,
+      newParticipantIds,
+    );
+
+    return this.getConversationById(conversationId, adderId);
+  }
+
+  /**
+   * Kiểm tra người dùng hiện tại có phải là trưởng nhóm hay không
+   */
+  async checkGroupOwner(conversationId: string, userId: string) {
+    const conversation = await this.conversationRepository.findById(
+      conversationId,
+    );
+
+    if (!conversation) {
+      return {
+        success: false,
+        message: 'Conversation not found',
+        data: { isOwner: false },
+      };
+    }
+
+    if (conversation.type !== 'group') {
+      return {
+        success: false,
+        message: 'This is not a group conversation',
+        data: { isOwner: false },
+      };
+    }
+
+    const isOwner = conversation.conversation_participants.some(
+      (p: any) =>
+        p.user_id.toString() === userId.toString() && p.role === 'owner',
+    );
+
+    return {
+      success: true,
+      message: 'Check group owner success',
+      data: { isOwner },
+    };
+  }
+
+  /**
+   * Xóa người tham gia khỏi nhóm
+   */
+  async removeParticipantFromGroup(
+    conversationId: string,
+    removerId: string,
+    targetUserId: string,
+  ) {
+    if (removerId.toString() === targetUserId.toString()) {
+      return {
+        success: false,
+        message: 'Cannot remove yourself from the group',
+        data: null,
+      };
+    }
+
+    const conversation = await this.conversationRepository.findById(
+      conversationId,
+    );
+
+    if (!conversation) {
+      return {
+        success: false,
+        message: 'Conversation not found',
+        data: null,
+      };
+    }
+
+    if (conversation.type !== 'group') {
+      return {
+        success: false,
+        message: 'This is not a group conversation',
+        data: null,
+      };
+    }
+
+    // Check if remover is owner
+    const removerParticipant = conversation.conversation_participants.find(
+      (p: any) => p.user_id.toString() === removerId.toString(),
+    );
+
+    if (!removerParticipant || removerParticipant.role !== 'owner') {
+      return {
+        success: false,
+        message: 'Only the group owner can remove participants',
+        data: null,
+      };
+    }
+
+    // Check if target user is in the group
+    const isTargetInGroup = conversation.conversation_participants.some(
+      (p: any) => p.user_id.toString() === targetUserId.toString(),
+    );
+
+    if (!isTargetInGroup) {
+      return {
+        success: false,
+        message: 'Target user is not in the group',
+        data: null,
+      };
+    }
+
+    try {
+      await this.conversationRepository.removeParticipant(
+        conversationId,
+        targetUserId,
+      );
+
+      return {
+        success: true,
+        message: 'Removed participant successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to remove participant',
+      };
+    }
+  }
 }

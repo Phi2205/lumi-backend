@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ConversationRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Lấy tất cả conversations mà user tham gia
@@ -198,6 +198,38 @@ export class ConversationRepository {
               },
             },
           },
+        },
+      },
+    });
+  }
+
+  /**
+   * Thêm người dùng vào conversation
+   */
+  async addParticipants(conversationId: string, userIds: string[]) {
+    const data = userIds.map((id) => ({
+      conversation_id: BigInt(conversationId),
+      user_id: BigInt(id),
+      role: 'member' as any,
+    }));
+
+    await this.prisma.conversation_participants.createMany({
+      data,
+      skipDuplicates: true,
+    });
+
+    return this.findById(conversationId);
+  }
+
+  /**
+   * Xóa người dùng khỏi conversation
+   */
+  async removeParticipant(conversationId: string, userId: string) {
+    return this.prisma.conversation_participants.delete({
+      where: {
+        conversation_id_user_id: {
+          conversation_id: BigInt(conversationId),
+          user_id: BigInt(userId),
         },
       },
     });

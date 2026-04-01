@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { StoriesService } from '../stories/stories.service';
 import { UsersService } from './users.service';
 import {
   ApiTags,
@@ -34,6 +35,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly recommendService: RecommendService,
     private readonly redisService: RedisService,
+    private readonly storiesService: StoriesService,
   ) { }
 
   // GET /users?name=abc&page=1&limit=20
@@ -91,6 +93,10 @@ export class UsersController {
             console.error('[Recommend] logEvent view_profile failed', err),
           );
       }
+
+      // Thêm thông tin hasStory
+      const has_story = await this.storiesService.hasStory(result.data.id);
+      (result.data as any).has_story = has_story;
     }
 
     return result;

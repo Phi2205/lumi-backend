@@ -181,7 +181,10 @@ export class SocketGateway
       this.logger.warn(
         `Rejected send_message from unauthenticated socket ${client.id}`,
       );
-      return;
+      return {
+        success: false,
+        message: 'Unauthenticated',
+      };
     }
 
     const senderId = (user.sub || user.id).toString();
@@ -199,9 +202,16 @@ export class SocketGateway
         attachments: payload.attachments,
       });
 
-      if (!resultMessage.success) return;
+      if (!resultMessage.success) {
+        return resultMessage;
+      }
 
       const messageData = resultMessage.data;
+
+      if (!messageData) {
+        this.logger.error('Message sent successfully but no data was returned');
+        return resultMessage;
+      }
 
       // Emit message tới room của conversation
       this.server.to(roomName).emit('new_message', messageData);
@@ -247,8 +257,14 @@ export class SocketGateway
             );
         }
       }
+
+      return resultMessage;
     } catch (error) {
       this.logger.error('Error handling send_message:', error);
+      return {
+        success: false,
+        message: error.message || 'Internal server error',
+      };
     }
   }
 

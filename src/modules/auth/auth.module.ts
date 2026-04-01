@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { StoriesModule } from '../stories/stories.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
@@ -14,6 +15,7 @@ import { EmailModule } from 'src/email/email.module';
     PrismaModule,
     RedisModule,
     EmailModule,
+    forwardRef(() => StoriesModule),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',
       signOptions: {
@@ -24,4 +26,4 @@ import { EmailModule } from 'src/email/email.module';
   providers: [AuthService, AuthRepository, JwtStrategy, RefreshJwtStrategy],
   controllers: [AuthController],
 })
-export class AuthModule {}
+export class AuthModule { }

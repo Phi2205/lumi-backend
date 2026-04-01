@@ -7,7 +7,7 @@ export class MessageService {
   constructor(
     private messageRepository: MessageRepository,
     private participationRepo: ConversationParticipantsRepository,
-  ) {}
+  ) { }
 
   /**
    * Gửi tin nhắn và cập nhật metadata cuộc trò chuyện
@@ -22,31 +22,39 @@ export class MessageService {
       type: string;
     }[];
   }) {
-    // Chuyển logic tương tác DB vào Repository
-    const message = await this.messageRepository.sendMessageTransaction(data);
+    try {
+      // Chuyển logic tương tác DB vào Repository
+      const message = await this.messageRepository.sendMessageTransaction(data);
 
-    return {
-      success: true,
-      message: 'Message sent successfully',
-      data: {
-        id: message.id.toString(),
-        conversation_id: message.conversation_id.toString(),
-        content: message.content,
-        type: message.type,
-        created_at: message.created_at,
-        sender: {
-          id: message.users.id.toString(),
-          username: message.users.username,
-          name: message.users.name,
-          avatar_url: message.users.avatar_url,
+      return {
+        success: true,
+        message: 'Message sent successfully',
+        data: {
+          id: message.id.toString(),
+          conversation_id: message.conversation_id.toString(),
+          content: message.content,
+          type: message.type,
+          created_at: message.created_at,
+          sender: {
+            id: message.users.id.toString(),
+            username: message.users.username,
+            name: message.users.name,
+            avatar_url: message.users.avatar_url,
+          },
+          attachments: message.message_attachments.map((att) => ({
+            id: att.id.toString(),
+            url: att.url,
+            type: att.file_type,
+          })),
         },
-        attachments: message.message_attachments.map((att) => ({
-          id: att.id.toString(),
-          url: att.url,
-          type: att.file_type,
-        })),
-      },
-    };
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to send message',
+        data: null,
+      };
+    }
   }
 
   /**
