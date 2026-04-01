@@ -26,7 +26,7 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -41,6 +41,26 @@ export class ConversationController {
     const userId = req.user.userId;
     return this.conversationService.getUserConversationsPaginated(
       userId,
+      page,
+      limit,
+    );
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Tìm kiếm cuộc trò chuyện của người dùng',
+  })
+  @ApiResponse({ status: 200, description: 'Danh sách cuộc trò chuyện phù hợp' })
+  async searchConversations(
+    @Req() req: any,
+    @Query('query') query: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.conversationService.searchUserConversations(
+      userId,
+      query || '',
       page,
       limit,
     );

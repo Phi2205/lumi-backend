@@ -11,7 +11,7 @@ export class ConversationService {
     private conversationParticipantsRepository: ConversationParticipantsRepository,
     @Inject(forwardRef(() => PresenceService))
     private presenceService: PresenceService,
-  ) {}
+  ) { }
 
   /**
    * Lấy tất cả conversations mà user tham gia
@@ -75,6 +75,76 @@ export class ConversationService {
     return {
       success: true,
       message: 'Get conversations successfully',
+      data: {
+        items: await Promise.all(
+          result.items.map(async (c: any) => ({
+            id: c.id.toString(),
+            type: c.type,
+            created_at: c.created_at,
+            name: c.name,
+            avatar_url: c.avatar_url,
+            participants: await Promise.all(
+              c.conversation_participants.map(async (p: any) => ({
+                id: p.users.id.toString(),
+                username: p.users.username,
+                name: p.users.name,
+                avatar_url: p.users.avatar_url,
+                joined_at: p.joined_at,
+                last_seen_message_id: p.last_seen_message_id?.toString(),
+                is_online: await this.presenceService.isOnline(
+                  p.users.id.toString(),
+                ),
+                last_online: await this.presenceService.getLastOnline(
+                  p.users.id.toString(),
+                ),
+              })),
+            ),
+            last_message: c.last_message,
+            last_message_id: c.last_message_id?.toString(),
+            last_sender_id: c.last_sender_id?.toString(),
+            last_message_at: c.last_message_at,
+            updated_at: c.updated_at,
+            unread_count:
+              c.conversation_participants.find(
+                (p: any) => p.users.id.toString() === userId.toString(),
+              )?.unread_count || 0,
+          })),
+        ),
+        pagination: {
+          total: result.meta.total,
+          page: result.meta.page,
+          limit: result.meta.limit,
+          totalPages: result.meta.totalPages,
+          hasNextPage: result.meta.page < result.meta.totalPages,
+          hasPreviousPage: result.meta.page > 1,
+        },
+      },
+    };
+  }
+
+  /**
+   * Tìm kiếm conversations của user với phân trang
+   */
+  async searchUserConversations(
+    userId: string,
+    query: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    if (!query || query.trim() === '') {
+      return this.getUserConversationsPaginated(userId, page, limit);
+    }
+
+    const result = await this.conversationParticipantsRepository.searchByUserId(
+      userId,
+      query,
+      page,
+      limit,
+    );
+
+    return {
+      success: true,
+      message: 'Search conversations successfully',
       data: {
         items: await Promise.all(
           result.items.map(async (c: any) => ({

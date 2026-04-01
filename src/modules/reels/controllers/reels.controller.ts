@@ -125,6 +125,7 @@ export class ReelsController {
     };
   }
 
+
   @Post(':id/like')
   @ApiOperation({ summary: 'Toggle like a reel' })
   @ApiResponse({ status: 200, description: 'Reel liked/unliked successfully' })
@@ -233,6 +234,16 @@ export class ReelsController {
   async getRecommendReels(@Req() req: any, @Query('limit') limit: number = 10) {
     const userId = req.user.userId;
     return this.recommendService.getRecommendedReels(userId, +limit);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a reel by ID' })
+  @ApiResponse({ status: 200, description: 'Reel details fetched successfully' })
+  async getReelById(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.userId;
+    const result = await this.reelsService.getReelById(id, userId);
+
+    return result;
   }
 
   @Get(':id/comments')
