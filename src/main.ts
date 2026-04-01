@@ -22,6 +22,8 @@ async function bootstrap() {
     credentials: true, // Cho phép gửi cookies
   });
 
+  console.log("FRONT_END_URL:", process.env.FRONT_END_URL);
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // chỉ cho phép field có trong DTO
