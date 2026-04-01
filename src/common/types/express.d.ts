@@ -5,9 +5,12 @@ declare global {
     interface User {
       userId: string;
       email: string;
-      role: UserRole;
+      role: string;
+    }
+    interface Request {
+      user?: User;
     }
   }
 }
 
-export {};
+export { };
