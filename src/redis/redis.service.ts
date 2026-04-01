@@ -6,30 +6,37 @@ import Redis from 'ioredis';
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
 
-  constructor(private configService: ConfigService) {
-    const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
+constructor(private configService: ConfigService) {
+  const redisUrl = this.configService.get<string>('REDIS_URL');
+  const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
 
+  // ✅ Ưu tiên Upstash nếu có REDIS_URL
+  if (redisUrl) {
+    this.client = new Redis(redisUrl);
+  } else {
+    // ✅ fallback local
     this.client = new Redis({
       host: this.configService.get<string>('REDIS_HOST') || 'localhost',
       port: this.configService.get<number>('REDIS_PORT') || 6379,
       ...(redisPassword &&
         redisPassword.trim() !== '' && { password: redisPassword }),
       db: this.configService.get<number>('REDIS_DB') || 0,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
+      retryStrategy: (times) => Math.min(times * 50, 2000),
       maxRetriesPerRequest: 3,
     });
-
-    this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
-    });
-
-    this.client.on('connect', () => {
-      console.log('Redis Client Connected');
-    });
   }
+
+  this.client.on('error', (err) => {
+    console.error('Redis Client Error:', err);
+  });
+
+  this.client.on('connect', () => {
+    console.log(
+      'Redis Connected:',
+      redisUrl ? 'UPSTASH' : 'LOCAL',
+    );
+  });
+}
 
   async onModuleInit() {
     try {
