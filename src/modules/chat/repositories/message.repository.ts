@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MessageRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tạo tin nhắn mới
@@ -23,11 +23,11 @@ export class MessageRepository {
         type: (data.type as any) || 'text',
         message_attachments: data.attachments?.length
           ? {
-              create: data.attachments.map((att) => ({
-                url: att.url,
-                file_type: att.type,
-              })),
-            }
+            create: data.attachments.map((att) => ({
+              url: att.url,
+              file_type: att.type,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -71,9 +71,9 @@ export class MessageRepository {
       take: limit,
       ...(cursor
         ? {
-            cursor: { id: BigInt(cursor) },
-            skip: 1,
-          }
+          cursor: { id: BigInt(cursor) },
+          skip: 1,
+        }
         : {}),
     });
   }
@@ -94,6 +94,20 @@ export class MessageRepository {
 
     return this.prisma.$transaction(
       async (tx) => {
+        // 0. Kiểm tra xem người gửi có phải là thành viên của cuộc trò chuyện không
+        const participant = await tx.conversation_participants.findUnique({
+          where: {
+            conversation_id_user_id: {
+              conversation_id: conversationIdBigInt,
+              user_id: senderIdBigInt,
+            },
+          },
+        });
+
+        if (!participant) {
+          throw new Error('You are not a participant of this conversation');
+        }
+
         // 1. Tạo tin nhắn mới
         const newMessage = await tx.messages.create({
           data: {
@@ -105,11 +119,11 @@ export class MessageRepository {
               (attachments?.length ? attachments[0].type : 'text'),
             message_attachments: attachments?.length
               ? {
-                  create: attachments.map((att) => ({
-                    url: att.url,
-                    file_type: att.type,
-                  })),
-                }
+                create: attachments.map((att) => ({
+                  url: att.url,
+                  file_type: att.type,
+                })),
+              }
               : undefined,
           },
           include: {

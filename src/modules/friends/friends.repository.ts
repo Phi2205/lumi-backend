@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class FriendsRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Kiểm tra 2 users đã là bạn chưa
@@ -234,5 +234,40 @@ export class FriendsRepository {
         ],
       },
     });
+  }
+
+  /**
+   * Tìm kiếm bạn bè của một user cụ thể bằng Full-Text Search
+   */
+  async searchFriendsOfUser(
+    userId: string,
+    query: string,
+    limit: number = 20,
+    offset: number = 0,
+  ) {
+    const userBigInt = BigInt(userId);
+
+    const result: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        u.id, u.username, u.name, u.avatar_url, u.bio,
+        f.created_at as "friends_since",
+        COUNT(*) OVER() as "total_count"
+      FROM users u
+      JOIN friends f ON u.id = f.friend_id
+      WHERE f.user_id = ${userBigInt}
+      AND to_tsvector(u.name || ' ' || u.username) @@ plainto_tsquery(${query})
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const total = result.length > 0 ? Number(result[0].total_count) : 0;
+
+    return {
+      data: result.map((item) => ({
+        ...item,
+        id: item.id.toString(),
+        total_count: undefined, // remove from item
+      })),
+      total,
+    };
   }
 }

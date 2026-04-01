@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
   Body,
+  Delete,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -26,7 +27,7 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -41,6 +42,26 @@ export class ConversationController {
     const userId = req.user.userId;
     return this.conversationService.getUserConversationsPaginated(
       userId,
+      page,
+      limit,
+    );
+  }
+
+  @Get('search')
+  @ApiOperation({
+    summary: 'Tìm kiếm cuộc trò chuyện của người dùng',
+  })
+  @ApiResponse({ status: 200, description: 'Danh sách cuộc trò chuyện phù hợp' })
+  async searchConversations(
+    @Req() req: any,
+    @Query('query') query: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    const userId = req.user.userId;
+    return this.conversationService.searchUserConversations(
+      userId,
+      query || '',
       page,
       limit,
     );
@@ -177,6 +198,43 @@ export class ConversationController {
       body.userIds,
       body.name,
       body.avatar,
+    );
+  }
+
+  @Post(':id/participants')
+  @ApiOperation({ summary: 'Thêm thành viên vào cuộc trò chuyện nhóm' })
+  async addParticipants(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { userIds: string[] },
+  ) {
+    const userId = req.user.userId;
+    return this.conversationService.addParticipantsToGroup(
+      id,
+      userId,
+      body.userIds,
+    );
+  }
+
+  @Get(':id/check-owner')
+  @ApiOperation({ summary: 'Kiểm tra xem user hiện tại có phải là trưởng nhóm hay không' })
+  async checkGroupOwner(@Req() req: any, @Param('id') id: string) {
+    const userId = req.user.userId;
+    return this.conversationService.checkGroupOwner(id, userId);
+  }
+
+  @Delete(':id/participants/:userId')
+  @ApiOperation({ summary: 'Xóa thành viên khỏi nhóm' })
+  async removeParticipant(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+  ) {
+    const removerId = req.user.userId;
+    return this.conversationService.removeParticipantFromGroup(
+      id,
+      removerId,
+      targetUserId,
     );
   }
 }

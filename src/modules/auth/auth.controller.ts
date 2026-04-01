@@ -8,6 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { StoriesService } from '../stories/stories.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import {
@@ -26,7 +27,10 @@ import { ResendOtpDto } from './dto/resend-otp.dto';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private readonly storiesService: StoriesService,
+  ) { }
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterDto })
@@ -159,7 +163,12 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
   async getMe(@Req() req) {
-    return this.auth.getMe(req.user.userId);
+    const result = await this.auth.getMe(req.user.userId);
+    if (result.success && result.data) {
+      const has_story = await this.storiesService.hasStory(req.user.userId);
+      (result.data as any).has_story = has_story;
+    }
+    return result;
   }
 
   @ApiOperation({ summary: 'Verify OTP and complete registration' })

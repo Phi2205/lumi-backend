@@ -13,7 +13,7 @@ import { FriendsService } from './friends.service';
 @Controller('friends')
 @UseGuards(AuthGuard('jwt'))
 export class FriendsController {
-  constructor(private friendsService: FriendsService) {}
+  constructor(private friendsService: FriendsService) { }
 
   /**
    * Lấy danh sách bạn bè
@@ -100,6 +100,28 @@ export class FriendsController {
   ) {
     const userId = req.user.userId;
     return this.friendsService.getFriendship(userId, friendId);
+  }
+
+  /**
+   * Tìm kiếm bạn bè của một user cụ thể
+   * GET /friends/user/:userId/search?q=phuong&page=1&limit=20
+   */
+  @Get('user/:userId/search')
+  async searchFriendsOfUser(
+    @Param('userId') userId: string,
+    @Query('q') query: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+
+    return this.friendsService.searchFriendsOfUser(
+      userId,
+      query || '',
+      pageNum,
+      limitNum,
+    );
   }
 
   /**
