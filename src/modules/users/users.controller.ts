@@ -94,9 +94,13 @@ export class UsersController {
           );
       }
 
-      // Thêm thông tin hasStory
-      const has_story = await this.storiesService.hasStory(result.data.id);
+      // Thêm thông tin hasStory & has_unseen
+      const [has_story, has_unseen] = await Promise.all([
+        this.storiesService.hasStory(result.data.id),
+        this.storiesService.hasUnseenStory(result.data.id, currentUserId),
+      ]);
       (result.data as any).has_story = has_story;
+      (result.data as any).has_unseen = has_unseen;
     }
 
     return result;
