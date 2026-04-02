@@ -393,6 +393,10 @@ export class SocketGateway
         users.map(async (u) => ({
           ...u,
           has_story: await this.storiesService.hasStory(u.id.toString()),
+          has_unseen: await this.storiesService.hasUnseenStory(
+            u.id.toString(),
+            userId,
+          ),
         })),
       );
     } catch (error) {
