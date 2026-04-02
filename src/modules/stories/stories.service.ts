@@ -69,6 +69,38 @@ export class StoriesService {
   }
 
   /**
+   * 🔍 KIỂM TRA USER CÓ STORY CHƯA XEM KHÔNG (DÀNH CHO VIEWER)
+   */
+  async hasUnseenStory(userId: string, viewerId: string): Promise<boolean> {
+    try {
+      // 1. Lấy tất cả active story ids của user
+      const activeStories = await this.prisma.stories.findMany({
+        where: {
+          user_id: BigInt(userId),
+          expires_at: { gt: new Date() },
+        },
+        select: { id: true },
+      });
+
+      if (activeStories.length === 0) return false;
+
+      // 2. Lấy danh sách các story đã xem của viewer từ Redis
+      const seenKey = `user:seen_stories:${viewerId}`;
+      const seenStoryIds = await this.redis.smembers(seenKey);
+      const seenSet = new Set(seenStoryIds);
+
+      // 3. Kiểm tra xem có story nào chưa nằm trong seenSet không
+      return activeStories.some((story) => !seenSet.has(story.id.toString()));
+    } catch (error) {
+      this.logger.error(
+        `Error in hasUnseenStory for user ${userId} and viewer ${viewerId}:`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
    * 🔔 THÔNG BÁO REALTIME CHO BẠN BÈ KHI CÓ THAY ĐỔI STORY
    */
   private async notifyStoryUpdate(userId: string) {
