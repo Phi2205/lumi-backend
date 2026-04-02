@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Tìm user theo email
@@ -52,6 +52,16 @@ export class AuthRepository {
         password_hash: data.password_hash,
       },
       include: { user_location: true },
+    });
+  }
+
+  /**
+   * Cập nhật mật khẩu cho user
+   */
+  async updatePassword(id: bigint | string | number, password_hash: string) {
+    return this.prisma.users.update({
+      where: { id: BigInt(id) },
+      data: { password_hash },
     });
   }
 }
