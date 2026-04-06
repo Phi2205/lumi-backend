@@ -17,6 +17,8 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { UploadFileModule } from './modules/upload-file/upload-file.module';
 import { ReelsModule } from './modules/reels/reels.module';
 
+import { HealthModule } from './modules/health/health.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -27,6 +29,7 @@ import { ReelsModule } from './modules/reels/reels.module';
     RedisModule,
     CloudinaryModule,
     CommonModule,
+    HealthModule,
     AuthModule,
     UsersModule,
     StoriesModule,
@@ -41,4 +44,4 @@ import { ReelsModule } from './modules/reels/reels.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

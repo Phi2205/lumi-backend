@@ -10,6 +10,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
 import { BadRequestException } from '@nestjs/common';
@@ -21,7 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   // Tạo username từ name và đảm bảo unique
   private async generateUniqueUsername(name: string): Promise<string> {
@@ -367,6 +370,79 @@ export class AuthService {
     return {
       success: true,
       message: 'Logged out successfully',
+    };
+  }
+
+  // 🔐 CHANGE PASSWORD
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.authRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password_hash);
+    if (!isMatch) {
+      throw new BadRequestException('Incorrect current password');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.authRepository.updatePassword(userId, hashedPassword);
+
+    return {
+      success: true,
+      message: 'Password changed successfully',
+    };
+  }
+
+  // 🔐 FORGOT PASSWORD
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.authRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException('Email not found');
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP in Redis with 5 minutes TTL
+    const otpKey = `forgot_password_otp:${dto.email}`;
+    await this.redisService.set(otpKey, otp, 300);
+
+    // Send OTP to email
+    await this.emailService.sendOTP(dto.email, otp);
+
+    return {
+      success: true,
+      message: 'OTP has been sent to your email for password reset.',
+    };
+  }
+
+  // 🔐 RESET PASSWORD
+  async resetPassword(dto: ResetPasswordDto) {
+    // 1. Verify OTP from Redis
+    const otpKey = `forgot_password_otp:${dto.email}`;
+    const storedOTP = await this.redisService.get(otpKey);
+
+    if (!storedOTP || storedOTP !== dto.otp) {
+      throw new BadRequestException('Invalid or expired OTP code');
+    }
+
+    // 2. Find user
+    const user = await this.authRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // 3. Hash new password and update
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await this.authRepository.updatePassword(user.id, hashed);
+
+    // 4. Delete OTP from Redis
+    await this.redisService.del(otpKey);
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully.',
     };
   }
 }
