@@ -1,4 +1,9 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  BadRequestException,
+} from '@nestjs/common';
 import { UsersRepository } from './users.repository';
 import { FriendRequestsRepository } from '../friend-requests/friend-requests.repository';
 import { FriendsRepository } from '../friends/friends.repository';
@@ -135,7 +140,21 @@ export class UsersService {
     const updateData: any = {};
     if (data.bio !== undefined) updateData.bio = data.bio;
     if (data.birthday !== undefined) {
-      updateData.birthday = data.birthday ? new Date(data.birthday) : null;
+      if (data.birthday) {
+        const birthdayDate = new Date(data.birthday);
+        const minDate = new Date('1900-01-01');
+
+        if (isNaN(birthdayDate.getTime())) {
+          throw new BadRequestException('Invalid birthday date');
+        }
+
+        if (birthdayDate < minDate) {
+          throw new BadRequestException('Birthday must be after 1900-01-01');
+        }
+        updateData.birthday = birthdayDate;
+      } else {
+        updateData.birthday = null;
+      }
     }
 
     const locationFields: (keyof UpdateProfileDto)[] = [
