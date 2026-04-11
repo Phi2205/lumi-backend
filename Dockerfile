@@ -3,8 +3,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install openssl for Prisma
+RUN apk add --no-cache openssl
+
 # Copy package files và prisma schema
 COPY package*.json ./
+COPY tsconfig*.json ./
 COPY prisma ./prisma/
 
 # Install tất cả dependencies
@@ -22,8 +26,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install openssl cho runtime Prisma
+RUN apk add --no-cache openssl
+
 # Copy các file cần thiết từ builder
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/tsconfig*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
