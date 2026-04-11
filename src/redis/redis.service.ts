@@ -6,37 +6,48 @@ import Redis from 'ioredis';
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
 
-constructor(private configService: ConfigService) {
-  const redisUrl = this.configService.get<string>('REDIS_URL');
-  const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
+  constructor(private configService: ConfigService) {
+    const rawRedisUrl = this.configService.get<string>('REDIS_URL');
 
-  // ✅ Ưu tiên Upstash nếu có REDIS_URL
-  if (redisUrl) {
-    this.client = new Redis(redisUrl);
-  } else {
-    // ✅ fallback local
-    this.client = new Redis({
-      host: this.configService.get<string>('REDIS_HOST') || 'localhost',
-      port: this.configService.get<number>('REDIS_PORT') || 6379,
-      ...(redisPassword &&
-        redisPassword.trim() !== '' && { password: redisPassword }),
-      db: this.configService.get<number>('REDIS_DB') || 0,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
-      maxRetriesPerRequest: 3,
+    // --- LOG KIỂM TRA ---
+    if (rawRedisUrl) {
+      console.log('--- DEBUG REDIS ---');
+      console.log('Raw URL Value:', JSON.stringify(rawRedisUrl)); 
+      console.log('Length:', rawRedisUrl.length);
+      console.log('--- END DEBUG ---');
+    }
+
+    // Tự động gỡ ngoặc kép nếu có để app chạy được luôn
+    const redisUrl = rawRedisUrl ? rawRedisUrl.replace(/["']/g, '').trim() : null;
+    const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
+
+    // ✅ Ưu tiên Upstash nếu có REDIS_URL
+    if (redisUrl) {
+      this.client = new Redis(redisUrl);
+    } else {
+      // ✅ fallback local
+      this.client = new Redis({
+        host: this.configService.get<string>('REDIS_HOST') || 'localhost',
+        port: this.configService.get<number>('REDIS_PORT') || 6379,
+        ...(redisPassword &&
+          redisPassword.trim() !== '' && { password: redisPassword }),
+        db: this.configService.get<number>('REDIS_DB') || 0,
+        retryStrategy: (times) => Math.min(times * 50, 2000),
+        maxRetriesPerRequest: 3,
+      });
+    }
+
+    this.client.on('error', (err) => {
+      console.error('Redis Client Error:', err);
+    });
+
+    this.client.on('connect', () => {
+      console.log(
+        'Redis Connected:',
+        redisUrl ? 'UPSTASH' : 'LOCAL',
+      );
     });
   }
-
-  this.client.on('error', (err) => {
-    console.error('Redis Client Error:', err);
-  });
-
-  this.client.on('connect', () => {
-    console.log(
-      'Redis Connected:',
-      redisUrl ? 'UPSTASH' : 'LOCAL',
-    );
-  });
-}
 
   async onModuleInit() {
     try {
