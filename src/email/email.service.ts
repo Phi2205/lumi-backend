@@ -7,42 +7,53 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor(private configService: ConfigService) {
+    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPass = this.configService.get<string>('SMTP_PASS');
 
-    // Validate SMTP credentials
-    if (!smtpUser || !smtpPass) {
-      console.warn(
-        '⚠️  SMTP credentials not configured. Email service will not work.',
-      );
-      console.warn('Please set SMTP_USER and SMTP_PASS in your .env file');
-    }
+    if (sendgridApiKey) {
+      // ✅ Use SendGrid if API Key is available
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        auth: {
+          user: 'apikey',
+          pass: sendgridApiKey,
+        },
+      });
+      console.log('✅ Email service configured with SendGrid');
+    } else {
+      // ✅ Fallback to Gmail or other SMTP
+      if (!smtpUser || !smtpPass) {
+        console.warn(
+          '⚠️  No SMTP or SendGrid credentials configured. Email service will not work.',
+        );
+      }
 
-    const transportConfig: any = {
-      host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
-      port: this.configService.get<number>('SMTP_PORT') || 587,
-      secure: false, // true for 465, false for other ports
-    };
-
-    // Only add auth if credentials are provided
-    if (smtpUser && smtpPass) {
-      transportConfig.auth = {
-        user: smtpUser,
-        pass: smtpPass,
+      const transportConfig: any = {
+        host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
+        port: this.configService.get<number>('SMTP_PORT') || 587,
+        secure: false,
       };
-    }
 
-    this.transporter = nodemailer.createTransport(transportConfig);
+      if (smtpUser && smtpPass) {
+        transportConfig.auth = {
+          user: smtpUser,
+          pass: smtpPass,
+        };
+      }
+      this.transporter = nodemailer.createTransport(transportConfig);
+    }
   }
 
   async sendOTP(email: string, otp: string): Promise<void> {
+    const sendgridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
     const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPass = this.configService.get<string>('SMTP_PASS');
-    console.log(smtpUser, smtpPass);
-    console.log('from: ', this.configService.get<string>('SMTP_FROM'));
-    if (!smtpUser || !smtpPass) {
+
+    if (!sendgridApiKey && (!smtpUser || !smtpPass)) {
       throw new Error(
-        'SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file',
+        'Email credentials not configured. Please set SENDGRID_API_KEY or SMTP credentials in .env file',
       );
     }
 
