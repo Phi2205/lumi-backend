@@ -20,14 +20,12 @@ export class EmailService {
 
   async sendOTP(email: string, otp: string): Promise<void> {
     // LƯU Ý: Email này BẮT BUỘC phải được xác thực (Verified) trên SendGrid Dashboard
-    const fromEmail = this.configService.get<string>('SMTP_FROM') || 'duongphidis@gmail.com';
+    const fromEmail = this.configService.get<string>('SMTP_FROM') || 'duongphidis1@gmail.com';
+    console.log(`DEBUG: Sending email from -> [${fromEmail}]`);
 
     const msg = {
       to: email,
-      from: {
-        email: 'duongphidis@gmail.com', // Đảm bảo email này đã Verify trong SendGrid -> Settings -> Sender Authentication
-        name: 'Lumi',
-      },
+      from: fromEmail,
       subject: 'Your OTP Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -51,7 +49,7 @@ export class EmailService {
     } catch (error) {
       console.error('❌ Error sending email via SendGrid:', error);
       if (error.response) {
-        console.error(JSON.stringify(error.response.body));
+        console.error('SendGrid Error Body:', JSON.stringify(error.response.body));
       }
       throw new Error(`Failed to send email: ${error.message}`);
     }
