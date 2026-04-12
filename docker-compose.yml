@@ -11,6 +11,9 @@ services:
     environment:
       - REDIS_HOST=redis
       - DATABASE_URL=${DATABASE_URL}
+      - RECOMMEND_SERVICE_URL=http://host.docker.internal:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
 
