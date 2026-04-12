@@ -19,11 +19,15 @@ export class EmailService {
   }
 
   async sendOTP(email: string, otp: string): Promise<void> {
-    const fromEmail = this.configService.get<string>('SMTP_FROM');
+    // LƯU Ý: Email này BẮT BUỘC phải được xác thực (Verified) trên SendGrid Dashboard
+    const fromEmail = this.configService.get<string>('SMTP_FROM') || 'duongphidis@gmail.com';
 
     const msg = {
       to: email,
-      from: fromEmail || 'duongphidis@gmail.com',
+      from: {
+        email: 'duongphidis@gmail.com', // Đảm bảo email này đã Verify trong SendGrid -> Settings -> Sender Authentication
+        name: 'Lumi',
+      },
       subject: 'Your OTP Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
