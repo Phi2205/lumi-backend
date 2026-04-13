@@ -9,7 +9,7 @@ import { FriendRequestsRepository } from '../friend-requests/friend-requests.rep
 import { FriendsRepository } from '../friends/friends.repository';
 import { RecommendService } from '../recommend/recommend.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { RedisService } from 'src/redis/redis.service';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class UsersService {
@@ -235,43 +235,49 @@ export class UsersService {
     };
   }
 
-  async getHoverCard(userId: string) {
+  async getHoverCard(userId: string, currentUserId: string) {
     const cacheKey = `user:hover_card:${userId}`;
     const cachedData = await this.redisService.get(cacheKey);
+
+    let baseData;
     if (cachedData) {
-      return {
-        success: true,
-        message: 'Hover card fetched from cache',
-        data: JSON.parse(cachedData),
+      baseData = JSON.parse(cachedData);
+    } else {
+      const user = await this.usersRepository.findById(userId);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+          data: null,
+        };
+      }
+
+      const friendCount = await this.friendsRepository.countFriends(user.id);
+
+      baseData = {
+        id: user.id.toString(),
+        name: user.name,
+        username: user.username,
+        avatar_url: user.avatar_url,
+        address: user.user_location?.address || null,
+        friend_count: friendCount,
       };
+
+      await this.redisService.set(cacheKey, JSON.stringify(baseData), 3600);
     }
 
-    const user = await this.usersRepository.findById(userId);
-    if (!user) {
-      return {
-        success: false,
-        message: 'User not found',
-        data: null,
-      };
-    }
-
-    const friendCount = await this.friendsRepository.countFriends(user.id);
-
-    const result = {
-      id: user.id.toString(),
-      name: user.name,
-      username: user.username,
-      avatar_url: user.avatar_url,
-      address: user.user_location?.address || null,
-      friend_count: friendCount,
-    };
-
-    await this.redisService.set(cacheKey, JSON.stringify(result), 3600);
-
+    // Always get the latest friend status for the specific viewer
+    const friendStatus = await this.getFriendStatus(currentUserId, userId);
+    console.log(friendStatus);
     return {
       success: true,
-      message: 'Hover card fetched successfully',
-      data: result,
+      message: cachedData
+        ? 'Hover card fetched from cache'
+        : 'Hover card fetched successfully',
+      data: {
+        ...baseData,
+        friend_status: friendStatus,
+      },
     };
   }
 }
