@@ -109,8 +109,9 @@ export class UsersController {
   @Get(':userId/hover-card')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get user info for hover card' })
-  async getHoverCard(@Param('userId') userId: string) {
-    return this.usersService.getHoverCard(userId);
+  async getHoverCard(@Param('userId') userId: string, @Request() req: any) {
+    const currentUserId = req.user.userId;
+    return this.usersService.getHoverCard(userId, currentUserId);
   }
 
   @Patch('profile')
