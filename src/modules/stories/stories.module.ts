@@ -1,8 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { StoriesController } from './stories.controller';
 import { StoriesService } from './stories.service';
-import { PrismaModule } from 'src/prisma/prisma.module';
-import { RedisModule } from 'src/redis/redis.module';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisModule } from '../../redis/redis.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { FriendsModule } from '../friends/friends.module';
 

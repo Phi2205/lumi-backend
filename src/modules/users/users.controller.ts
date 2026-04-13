@@ -25,8 +25,8 @@ import {
 } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RecommendService } from '../recommend/recommend.service';
-import { RedisService } from 'src/redis/redis.service';
-import { cloudinaryProfileStorage } from 'src/config/multer.config';
+import { RedisService } from '../../redis/redis.service';
+import { cloudinaryProfileStorage } from '../../config/multer.config';
 
 @ApiTags('users')
 @Controller('users')

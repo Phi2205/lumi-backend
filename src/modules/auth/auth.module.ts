@@ -6,9 +6,9 @@ import { AuthRepository } from './auth.repository';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { RefreshJwtStrategy } from './refresh.strategy';
-import { PrismaModule } from 'src/prisma/prisma.module';
-import { RedisModule } from 'src/redis/redis.module';
-import { EmailModule } from 'src/email/email.module';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisModule } from '../../redis/redis.module';
+import { EmailModule } from '../../email/email.module';
 
 @Module({
   imports: [

@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { StoriesService } from './stories.service';
-import { cloudinaryStorage } from 'src/config/multer.config';
+import { cloudinaryStorage } from '../../config/multer.config';
 import { CreateStoryDto } from './dto/create-story.dto';
 
 @ApiTags('stories')

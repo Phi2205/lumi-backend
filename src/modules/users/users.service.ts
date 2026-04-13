@@ -9,7 +9,7 @@ import { FriendRequestsRepository } from '../friend-requests/friend-requests.rep
 import { FriendsRepository } from '../friends/friends.repository';
 import { RecommendService } from '../recommend/recommend.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { RedisService } from 'src/redis/redis.service';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class UsersService {
