@@ -1,0 +1,25 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumi-backend
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - DATABASE_URL=${DATABASE_URL}
+      - RECOMMEND_SERVICE_URL=http://host.docker.internal:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: lumi-redis
+    ports:
+      - "6379:6379"
+    # command: redis-server --requirepass ${REDIS_PASSWORD}

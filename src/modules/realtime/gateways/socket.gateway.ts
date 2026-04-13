@@ -181,6 +181,7 @@ export class SocketGateway
       this.logger.warn(
         `Rejected send_message from unauthenticated socket ${client.id}`,
       );
+      client.emit('error', { message: 'Unauthenticated' });
       return {
         success: false,
         message: 'Unauthenticated',
@@ -274,7 +275,10 @@ export class SocketGateway
     @ConnectedSocket() client: Socket,
   ) {
     const user = client.data.user;
-    if (!user || user.role === 'guest') return;
+    if (!user || user.role === 'guest') {
+      client.emit('error', { message: 'Unauthenticated' });
+      return;
+    }
 
     const userId = (user.sub || user.id).toString();
 
@@ -335,7 +339,10 @@ export class SocketGateway
   @SubscribeMessage('heartbeat')
   async handleHeartbeat(@ConnectedSocket() client: Socket) {
     const user = client.data.user;
-    if (!user || user.role === 'guest') return;
+    if (!user || user.role === 'guest') {
+      client.emit('error', { message: 'Unauthenticated' });
+      return;
+    }
 
     const userId = (user.sub || user.id).toString();
     await this.presenceService.handleHeartbeat(userId);
@@ -353,7 +360,10 @@ export class SocketGateway
     @MessageBody() payload?: { limit?: number; exclude?: string[] },
   ) {
     const user = client.data.user;
-    if (!user || user.role === 'guest') return [];
+    if (!user || user.role === 'guest') {
+      client.emit('error', { message: 'Unauthenticated' });
+      return [];
+    }
 
     const userId = (user.sub || user.id).toString();
 

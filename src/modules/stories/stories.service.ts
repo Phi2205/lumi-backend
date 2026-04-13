@@ -1,13 +1,13 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { RedisService } from 'src/redis/redis.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { RealtimeService } from '../realtime/realtime.service';
 import { PresenceService } from '../realtime/services/presence.service';
 import { FriendsService } from '../friends/friends.service';
 import {
   parsePaginationParams,
   createPaginationMeta,
-} from 'src/utils/pagination';
+} from '../../utils/pagination';
 
 @Injectable()
 export class StoriesService {

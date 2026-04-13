@@ -1,54 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { MailService } from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private mailService: MailService;
 
   constructor(private configService: ConfigService) {
-    const smtpUser = this.configService.get<string>('SMTP_USER');
-    const smtpPass = this.configService.get<string>('SMTP_PASS');
+    this.mailService = new MailService();
+    const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
 
-    // Validate SMTP credentials
-    if (!smtpUser || !smtpPass) {
-      console.warn(
-        '⚠️  SMTP credentials not configured. Email service will not work.',
-      );
-      console.warn('Please set SMTP_USER and SMTP_PASS in your .env file');
+    if (!apiKey) {
+      throw new Error('SENDGRID_API_KEY not configured');
     }
 
-    const transportConfig: any = {
-      host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
-      port: this.configService.get<number>('SMTP_PORT') || 587,
-      secure: false, // true for 465, false for other ports
-    };
-
-    // Only add auth if credentials are provided
-    if (smtpUser && smtpPass) {
-      transportConfig.auth = {
-        user: smtpUser,
-        pass: smtpPass,
-      };
-    }
-
-    this.transporter = nodemailer.createTransport(transportConfig);
+    this.mailService.setApiKey(apiKey);
+    console.log('✅ Email service using SendGrid API Service');
   }
 
   async sendOTP(email: string, otp: string): Promise<void> {
-    const smtpUser = this.configService.get<string>('SMTP_USER');
-    const smtpPass = this.configService.get<string>('SMTP_PASS');
-    console.log(smtpUser, smtpPass);
-    console.log('from: ', this.configService.get<string>('SMTP_FROM'));
-    if (!smtpUser || !smtpPass) {
-      throw new Error(
-        'SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file',
-      );
-    }
+    // Lấy email gửi từ .env và làm sạch dấu ngoặc hoặc khoảng trắng
+    // Đảm bảo trùng khớp 100% với email đã Verify trên SendGrid
+    let fromEmail = this.configService.get<string>('SMTP_FROM') || 'duongphidis1@gmail.com';
+    fromEmail = fromEmail.replace(/["']/g, '').trim();
+    console.log(`DEBUG: Sending email from -> [${fromEmail}]`);
 
-    const mailOptions = {
-      from: this.configService.get<string>('SMTP_FROM') || smtpUser,
+    const msg = {
       to: email,
+      from: fromEmail,
       subject: 'Your OTP Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -67,10 +46,13 @@ export class EmailService {
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      await this.mailService.send(msg);
       console.log(`✅ OTP email sent to ${email}`);
     } catch (error) {
-      console.error('❌ Error sending email:', error);
+      console.error('❌ Error sending email via SendGrid:', error);
+      if (error.response) {
+        console.error('SendGrid Error Body:', JSON.stringify(error.response.body));
+      }
       throw new Error(`Failed to send email: ${error.message}`);
     }
   }

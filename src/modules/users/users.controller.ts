@@ -25,8 +25,8 @@ import {
 } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RecommendService } from '../recommend/recommend.service';
-import { RedisService } from 'src/redis/redis.service';
-import { cloudinaryProfileStorage } from 'src/config/multer.config';
+import { RedisService } from '../../redis/redis.service';
+import { cloudinaryProfileStorage } from '../../config/multer.config';
 
 @ApiTags('users')
 @Controller('users')
@@ -109,8 +109,9 @@ export class UsersController {
   @Get(':userId/hover-card')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get user info for hover card' })
-  async getHoverCard(@Param('userId') userId: string) {
-    return this.usersService.getHoverCard(userId);
+  async getHoverCard(@Param('userId') userId: string, @Request() req: any) {
+    const currentUserId = req.user.userId;
+    return this.usersService.getHoverCard(userId, currentUserId);
   }
 
   @Patch('profile')

@@ -314,6 +314,7 @@ export class RecommendService {
             },
           }),
         );
+        console.log('response', response);
 
         const candidates = response.data.candidates || [];
         const newIds = candidates
