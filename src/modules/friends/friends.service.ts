@@ -7,7 +7,7 @@ export class FriendsService {
   constructor(
     private friendsRepository: FriendsRepository,
     private prisma: PrismaService,
-  ) { }
+  ) {}
 
   /**
    * Lấy danh sách bạn bè

@@ -7,9 +7,14 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { FriendsModule } from '../friends/friends.module';
 
 @Module({
-  imports: [PrismaModule, RedisModule, forwardRef(() => RealtimeModule), FriendsModule],
+  imports: [
+    PrismaModule,
+    RedisModule,
+    forwardRef(() => RealtimeModule),
+    FriendsModule,
+  ],
   controllers: [StoriesController],
   providers: [StoriesService],
   exports: [StoriesService],
 })
-export class StoriesModule { }
+export class StoriesModule {}

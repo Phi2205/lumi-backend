@@ -41,7 +41,7 @@ export class ReelsController {
     private readonly socketGateway: SocketGateway,
     @Inject(forwardRef(() => RecommendService))
     private readonly recommendService: RecommendService,
-  ) { }
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new reel' })
@@ -125,7 +125,6 @@ export class ReelsController {
     };
   }
 
-
   @Post(':id/like')
   @ApiOperation({ summary: 'Toggle like a reel' })
   @ApiResponse({ status: 200, description: 'Reel liked/unliked successfully' })
@@ -153,7 +152,10 @@ export class ReelsController {
                 },
               })
               .catch((err) =>
-                console.error('Failed to log like_reel event to CF:', err.message),
+                console.error(
+                  'Failed to log like_reel event to CF:',
+                  err.message,
+                ),
               );
           }
         }
@@ -179,9 +181,14 @@ export class ReelsController {
     const result = await this.reelViewService.markAsSeen(reelIds, userId);
 
     // Đồng bộ tức thì với queue recommend trong Redis
-    this.recommendService.syncSeenReelsStatusInQueue(userId, reelIds).catch((err) =>
-      console.error('Failed to sync seen reels status in queue:', err.message),
-    );
+    this.recommendService
+      .syncSeenReelsStatusInQueue(userId, reelIds)
+      .catch((err) =>
+        console.error(
+          'Failed to sync seen reels status in queue:',
+          err.message,
+        ),
+      );
 
     // 2. Log event view_reel cho từng reel để gửi sang hệ thống CF
     for (const id of reelIds) {
@@ -202,7 +209,10 @@ export class ReelsController {
               },
             })
             .catch((err) =>
-              console.error(`Failed to log view_reel event for ${id} to CF:`, err.message),
+              console.error(
+                `Failed to log view_reel event for ${id} to CF:`,
+                err.message,
+              ),
             );
         }
       } catch (error) {
@@ -238,7 +248,10 @@ export class ReelsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a reel by ID' })
-  @ApiResponse({ status: 200, description: 'Reel details fetched successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reel details fetched successfully',
+  })
   async getReelById(@Param('id') id: string, @Req() req: any) {
     const userId = req.user.userId;
     const result = await this.reelsService.getReelById(id, userId);
@@ -309,7 +322,10 @@ export class ReelsController {
               },
             })
             .catch((err) =>
-              console.error('Failed to log comment_reel event to CF:', err.message),
+              console.error(
+                'Failed to log comment_reel event to CF:',
+                err.message,
+              ),
             );
         }
         console.log('Commented on reel:', reelId);

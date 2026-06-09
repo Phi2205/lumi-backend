@@ -20,7 +20,7 @@ export class UsersService {
     private readonly redisService: RedisService,
     @Inject(forwardRef(() => RecommendService))
     private readonly recommendService: RecommendService,
-  ) { }
+  ) {}
 
   // Tìm kiếm user theo name (chứa chuỗi, không phân biệt hoa/thường)
   async findByName(name?: string, page = 1, limit = 20) {

@@ -33,7 +33,7 @@ export class AuthController {
   constructor(
     private auth: AuthService,
     private readonly storiesService: StoriesService,
-  ) { }
+  ) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterDto })

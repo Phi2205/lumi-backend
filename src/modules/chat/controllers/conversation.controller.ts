@@ -27,7 +27,7 @@ export class ConversationController {
   constructor(
     private readonly conversationService: ConversationService,
     private readonly messageService: MessageService,
-  ) { }
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -51,7 +51,10 @@ export class ConversationController {
   @ApiOperation({
     summary: 'Tìm kiếm cuộc trò chuyện của người dùng',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách cuộc trò chuyện phù hợp' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách cuộc trò chuyện phù hợp',
+  })
   async searchConversations(
     @Req() req: any,
     @Query('query') query: string,
@@ -217,7 +220,9 @@ export class ConversationController {
   }
 
   @Get(':id/check-owner')
-  @ApiOperation({ summary: 'Kiểm tra xem user hiện tại có phải là trưởng nhóm hay không' })
+  @ApiOperation({
+    summary: 'Kiểm tra xem user hiện tại có phải là trưởng nhóm hay không',
+  })
   async checkGroupOwner(@Req() req: any, @Param('id') id: string) {
     const userId = req.user.userId;
     return this.conversationService.checkGroupOwner(id, userId);

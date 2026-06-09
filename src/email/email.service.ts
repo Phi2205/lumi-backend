@@ -21,7 +21,8 @@ export class EmailService {
   async sendOTP(email: string, otp: string): Promise<void> {
     // Lấy email gửi từ .env và làm sạch dấu ngoặc hoặc khoảng trắng
     // Đảm bảo trùng khớp 100% với email đã Verify trên SendGrid
-    let fromEmail = this.configService.get<string>('SMTP_FROM') || 'duongphidis1@gmail.com';
+    let fromEmail =
+      this.configService.get<string>('SMTP_FROM') || 'duongphidis1@gmail.com';
     fromEmail = fromEmail.replace(/["']/g, '').trim();
     console.log(`DEBUG: Sending email from -> [${fromEmail}]`);
 
@@ -51,7 +52,10 @@ export class EmailService {
     } catch (error) {
       console.error('❌ Error sending email via SendGrid:', error);
       if (error.response) {
-        console.error('SendGrid Error Body:', JSON.stringify(error.response.body));
+        console.error(
+          'SendGrid Error Body:',
+          JSON.stringify(error.response.body),
+        );
       }
       throw new Error(`Failed to send email: ${error.message}`);
     }

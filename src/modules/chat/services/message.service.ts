@@ -7,7 +7,7 @@ export class MessageService {
   constructor(
     private messageRepository: MessageRepository,
     private participationRepo: ConversationParticipantsRepository,
-  ) { }
+  ) {}
 
   /**
    * Gửi tin nhắn và cập nhật metadata cuộc trò chuyện

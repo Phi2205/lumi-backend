@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class TokenParserMiddleware implements NestMiddleware {
-  constructor(private jwtService: JwtService) { }
+  constructor(private jwtService: JwtService) {}
 
   use(req: Request, res: Response, next: NextFunction) {
     // Parse token từ header hoặc cookie

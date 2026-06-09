@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Query, UseGuards, Req, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Post,
+} from '@nestjs/common';
 import { RecommendService } from './recommend.service';
 import {
   ApiTags,
@@ -14,7 +22,7 @@ import { AuthGuard } from '@nestjs/passport';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('JWT-auth')
 export class RecommendController {
-  constructor(private readonly recommendService: RecommendService) { }
+  constructor(private readonly recommendService: RecommendService) {}
 
   @Get('users')
   @ApiOperation({ summary: 'Get recommended users for friend connection' })

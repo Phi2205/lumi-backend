@@ -163,9 +163,9 @@ export class RecommendService {
               ...rec,
               user: userDetail
                 ? {
-                  ...userDetail,
-                  id: userDetail.id.toString(),
-                }
+                    ...userDetail,
+                    id: userDetail.id.toString(),
+                  }
                 : null,
             };
           },
@@ -239,7 +239,7 @@ export class RecommendService {
     // 1. Lấy danh sách recommend hiện tại trong Redis và parse dữ liệu
     const fetchQueue = async () => {
       const raw = await redis.lrange(queueKey, 0, -1);
-      return raw.map(item => {
+      return raw.map((item) => {
         try {
           const parsed = JSON.parse(item);
           return { id: parsed.id, seen: !!parsed.seen };
@@ -250,7 +250,7 @@ export class RecommendService {
     };
 
     let queue = await fetchQueue();
-    let unseen = queue.filter(q => !q.seen);
+    let unseen = queue.filter((q) => !q.seen);
 
     // 2. Logic điều phối: Cold Start (đợi sync) vs Low Queue (chạy ngầm)
     const PREFETCH_THRESHOLD = 20;
@@ -294,11 +294,25 @@ export class RecommendService {
         this.prisma.posts.findMany({
           where: { id: { in: selectedIds.map((id) => BigInt(id)) } },
           include: {
-            users: { select: { id: true, username: true, name: true, avatar_url: true } },
+            users: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
+            },
             post_media: true,
             original_post: {
               include: {
-                users: { select: { id: true, username: true, name: true, avatar_url: true } },
+                users: {
+                  select: {
+                    id: true,
+                    username: true,
+                    name: true,
+                    avatar_url: true,
+                  },
+                },
                 post_media: true,
               },
             },
@@ -318,68 +332,79 @@ export class RecommendService {
 
       // Thu thập userId để batch story status
       const userIdsToCheck = new Set<string>();
-      posts.forEach(post => {
+      posts.forEach((post) => {
         if (post.users?.id) userIdsToCheck.add(post.users.id.toString());
-        if (post.original_post?.users?.id) userIdsToCheck.add(post.original_post.users.id.toString());
+        if (post.original_post?.users?.id)
+          userIdsToCheck.add(post.original_post.users.id.toString());
       });
 
       const storyStatusesArray = await Promise.all(
-        Array.from(userIdsToCheck).map(async id => ({ id, hasStory: await this.hasStory(id) }))
+        Array.from(userIdsToCheck).map(async (id) => ({
+          id,
+          hasStory: await this.hasStory(id),
+        })),
       );
-      const storyStatusMap = new Map(storyStatusesArray.map(s => [s.id, s.hasStory]));
+      const storyStatusMap = new Map(
+        storyStatusesArray.map((s) => [s.id, s.hasStory]),
+      );
 
-      const orderedPosts = selectedIds.map((id) => {
-        const post = postsMap.get(id);
-        if (!post) return null;
+      const orderedPosts = selectedIds
+        .map((id) => {
+          const post = postsMap.get(id);
+          if (!post) return null;
 
-        return {
-          id: post.id.toString(),
-          user_id: post.user_id.toString(),
-          content: post.content,
-          created_at: post.created_at,
-          like_count: post.like_count || 0,
-          comment_count: post.comment_count || 0,
-          share_count: post.share_count || 0,
-          has_liked: likedPostIds.has(post.id.toString()),
-          user: {
-            id: post.users.id.toString(),
-            username: post.users.username,
-            name: post.users.name,
-            avatar_url: post.users.avatar_url,
-            has_story: storyStatusMap.get(post.users.id.toString()) || false,
-          },
-          post_media: post.post_media.map((m) => ({
-            id: m.id.toString(),
-            media_url: m.media_url,
-            media_type: m.media_type,
-            order: m.order,
-          })),
-          original_post: post.original_post
-            ? {
-              id: post.original_post.id.toString(),
-              user_id: post.original_post.user_id.toString(),
-              content: post.original_post.content,
-              created_at: post.original_post.created_at,
-              like_count: post.original_post.like_count || 0,
-              comment_count: post.original_post.comment_count || 0,
-              share_count: post.original_post.share_count || 0,
-              user: {
-                id: post.original_post.users.id.toString(),
-                username: post.original_post.users.username,
-                name: post.original_post.users.name,
-                avatar_url: post.original_post.users.avatar_url,
-                hasStory: storyStatusMap.get(post.original_post.users.id.toString()) || false,
-              },
-              post_media: post.original_post.post_media.map((m) => ({
-                id: m.id.toString(),
-                media_url: m.media_url,
-                media_type: m.media_type,
-                order: m.order,
-              })),
-            }
-            : null,
-        };
-      }).filter((p) => p !== null);
+          return {
+            id: post.id.toString(),
+            user_id: post.user_id.toString(),
+            content: post.content,
+            created_at: post.created_at,
+            like_count: post.like_count || 0,
+            comment_count: post.comment_count || 0,
+            share_count: post.share_count || 0,
+            has_liked: likedPostIds.has(post.id.toString()),
+            user: {
+              id: post.users.id.toString(),
+              username: post.users.username,
+              name: post.users.name,
+              avatar_url: post.users.avatar_url,
+              has_story: storyStatusMap.get(post.users.id.toString()) || false,
+            },
+            post_media: post.post_media.map((m) => ({
+              id: m.id.toString(),
+              media_url: m.media_url,
+              media_type: m.media_type,
+              order: m.order,
+            })),
+            original_post: post.original_post
+              ? {
+                  id: post.original_post.id.toString(),
+                  user_id: post.original_post.user_id.toString(),
+                  content: post.original_post.content,
+                  created_at: post.original_post.created_at,
+                  like_count: post.original_post.like_count || 0,
+                  comment_count: post.original_post.comment_count || 0,
+                  share_count: post.original_post.share_count || 0,
+                  user: {
+                    id: post.original_post.users.id.toString(),
+                    username: post.original_post.users.username,
+                    name: post.original_post.users.name,
+                    avatar_url: post.original_post.users.avatar_url,
+                    hasStory:
+                      storyStatusMap.get(
+                        post.original_post.users.id.toString(),
+                      ) || false,
+                  },
+                  post_media: post.original_post.post_media.map((m) => ({
+                    id: m.id.toString(),
+                    media_url: m.media_url,
+                    media_type: m.media_type,
+                    order: m.order,
+                  })),
+                }
+              : null,
+          };
+        })
+        .filter((p) => p !== null);
 
       return {
         success: true,
@@ -398,7 +423,10 @@ export class RecommendService {
   /**
    * Prefetch candidates từ Recommend Service (Sync hoặc Async tùy trường hợp)
    */
-  private async prefetchRecommendedPosts(userId: string, strategy: string = 'multi_source') {
+  private async prefetchRecommendedPosts(
+    userId: string,
+    strategy: string = 'multi_source',
+  ) {
     if (this.isPrefetchingPosts.has(userId)) return;
     this.isPrefetchingPosts.add(userId);
 
@@ -419,29 +447,40 @@ export class RecommendService {
       ]);
 
       const allViewedIdsSet = new Set(views.map((v) => v.post_id.toString()));
-      const currentQueueIds = new Set(currentQueueRaw.map(item => {
-        try { return JSON.parse(item).id; } catch { return item; }
-      }));
+      const currentQueueIds = new Set(
+        currentQueueRaw.map((item) => {
+          try {
+            return JSON.parse(item).id;
+          } catch {
+            return item;
+          }
+        }),
+      );
 
-      const excludeIds = Array.from(new Set([...historyIds, ...allViewedIdsSet, ...currentQueueIds]));
+      const excludeIds = Array.from(
+        new Set([...historyIds, ...allViewedIdsSet, ...currentQueueIds]),
+      );
       const excludeString = excludeIds.join(',').substring(0, 4000);
 
       const response = await firstValueFrom(
-        this.httpService.get(`${this.recommendServiceUrl}/api/recommend-posts/${userId}`, {
-          headers: { 'x-internal-key': this.internalSharedSecret },
-          params: {
-            k: 100,
-            window_days: 30,
-            strategy: strategy,
-            exclude_ids: excludeString,
+        this.httpService.get(
+          `${this.recommendServiceUrl}/api/recommend-posts/${userId}`,
+          {
+            headers: { 'x-internal-key': this.internalSharedSecret },
+            params: {
+              k: 100,
+              window_days: 30,
+              strategy: strategy,
+              exclude_ids: excludeString,
+            },
           },
-        }),
+        ),
       );
 
       const candidates = response.data.candidates || [];
       const newIds = candidates
         .map((p: any) => p.post_id.toString())
-        .filter(id => !currentQueueIds.has(id));
+        .filter((id) => !currentQueueIds.has(id));
 
       if (newIds.length > 0) {
         await redis.sadd(historyKey, ...newIds);
@@ -453,13 +492,17 @@ export class RecommendService {
           seen: allViewedIdsSet.has(id),
         }));
 
-        await redis.pipeline()
+        await redis
+          .pipeline()
           .rpush(queueKey, ...newEntries.map((q) => JSON.stringify(q)))
           .expire(queueKey, TTL)
           .exec();
       }
     } catch (error) {
-      console.error('[prefetchRecommendedPosts] Error prefetching recommendations:', error.message);
+      console.error(
+        '[prefetchRecommendedPosts] Error prefetching recommendations:',
+        error.message,
+      );
     } finally {
       this.isPrefetchingPosts.delete(userId);
     }
@@ -494,7 +537,8 @@ export class RecommendService {
     });
 
     if (modified) {
-      await redis.pipeline()
+      await redis
+        .pipeline()
         .del(queueKey)
         .rpush(queueKey, ...updatedQueue)
         .expire(queueKey, TTL)
@@ -508,7 +552,7 @@ export class RecommendService {
 
     const fetchQueue = async () => {
       const raw = await redis.lrange(queueKey, 0, -1);
-      return raw.map(item => {
+      return raw.map((item) => {
         try {
           const parsed = JSON.parse(item);
           return { id: parsed.id, seen: !!parsed.seen };
@@ -519,7 +563,7 @@ export class RecommendService {
     };
 
     let queue = await fetchQueue();
-    let unseen = queue.filter(q => !q.seen);
+    let unseen = queue.filter((q) => !q.seen);
 
     // 2. Logic điều phối
     const PREFETCH_THRESHOLD = 20;
@@ -527,10 +571,13 @@ export class RecommendService {
     if (unseen.length === 0) {
       await this.prefetchRecommendedReels(userId);
       queue = await fetchQueue();
-      unseen = queue.filter(q => !q.seen);
+      unseen = queue.filter((q) => !q.seen);
     } else if (unseen.length < PREFETCH_THRESHOLD) {
-      this.prefetchRecommendedReels(userId).catch(err =>
-        console.error('[getRecommendedReels] Background prefetch failed:', err.message)
+      this.prefetchRecommendedReels(userId).catch((err) =>
+        console.error(
+          '[getRecommendedReels] Background prefetch failed:',
+          err.message,
+        ),
       );
     }
 
@@ -539,14 +586,22 @@ export class RecommendService {
       const selected = unseen.slice(0, limit);
       const selectedIds = selected.map((s) => s.id);
 
-      const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME;
+      const cloudName =
+        process.env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_NAME;
 
       // Lấy thông tin chi tiết các bài reels và kiểm tra like của user song song
       const [reels, userLikes] = await Promise.all([
         this.prisma.reels.findMany({
           where: { id: { in: selectedIds.map((id) => BigInt(id)) } },
           include: {
-            user: { select: { id: true, username: true, name: true, avatar_url: true } },
+            user: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar_url: true,
+              },
+            },
           },
         }),
         this.prisma.reel_likes.findMany({
@@ -563,46 +618,53 @@ export class RecommendService {
 
       // Thu thập userIds để batch stories
       const userIdsToCheck = new Set<string>();
-      reels.forEach(reel => {
+      reels.forEach((reel) => {
         if (reel.user?.id) userIdsToCheck.add(reel.user.id.toString());
       });
 
       const storyStatusesArray = await Promise.all(
-        Array.from(userIdsToCheck).map(async id => ({ id, hasStory: await this.hasStory(id) }))
+        Array.from(userIdsToCheck).map(async (id) => ({
+          id,
+          hasStory: await this.hasStory(id),
+        })),
       );
-      const storyStatusMap = new Map(storyStatusesArray.map(s => [s.id, s.hasStory]));
+      const storyStatusMap = new Map(
+        storyStatusesArray.map((s) => [s.id, s.hasStory]),
+      );
 
-      const orderedReels = selectedIds.map((id) => {
-        const reel = reelsMap.get(id);
-        if (!reel) return null;
+      const orderedReels = selectedIds
+        .map((id) => {
+          const reel = reelsMap.get(id);
+          if (!reel) return null;
 
-        return {
-          id: reel.id.toString(),
-          user_id: reel.user_id.toString(),
-          video_url: reel.video_url,
-          public_id: reel.public_id,
-          thumbnail_url: reel.thumbnail_url,
-          caption: reel.caption,
-          music_name: reel.music_name,
-          duration: reel.duration,
-          like_count: reel.like_count || 0,
-          comment_count: reel.comment_count || 0,
-          share_count: reel.share_count || 0,
-          view_count: reel.view_count || 0,
-          created_at: reel.created_at,
-          has_liked: likedReelIds.has(reel.id.toString()),
-          user: {
-            id: reel.user.id.toString(),
-            username: reel.user.username,
-            name: reel.user.name,
-            avatar_url: reel.user.avatar_url,
-            has_story: storyStatusMap.get(reel.user.id.toString()) || false,
-          },
-          streaming_url: cloudName
-            ? `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${reel.public_id}.m3u8`
-            : null,
-        };
-      }).filter((r) => r !== null);
+          return {
+            id: reel.id.toString(),
+            user_id: reel.user_id.toString(),
+            video_url: reel.video_url,
+            public_id: reel.public_id,
+            thumbnail_url: reel.thumbnail_url,
+            caption: reel.caption,
+            music_name: reel.music_name,
+            duration: reel.duration,
+            like_count: reel.like_count || 0,
+            comment_count: reel.comment_count || 0,
+            share_count: reel.share_count || 0,
+            view_count: reel.view_count || 0,
+            created_at: reel.created_at,
+            has_liked: likedReelIds.has(reel.id.toString()),
+            user: {
+              id: reel.user.id.toString(),
+              username: reel.user.username,
+              name: reel.user.name,
+              avatar_url: reel.user.avatar_url,
+              has_story: storyStatusMap.get(reel.user.id.toString()) || false,
+            },
+            streaming_url: cloudName
+              ? `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/${reel.public_id}.m3u8`
+              : null,
+          };
+        })
+        .filter((r) => r !== null);
 
       return {
         success: true,
@@ -641,29 +703,40 @@ export class RecommendService {
       ]);
 
       const allViewedIdsSet = new Set(views.map((v) => v.reel_id.toString()));
-      const currentQueueIds = new Set(currentQueueRaw.map(item => {
-        try { return JSON.parse(item).id; } catch { return item; }
-      }));
+      const currentQueueIds = new Set(
+        currentQueueRaw.map((item) => {
+          try {
+            return JSON.parse(item).id;
+          } catch {
+            return item;
+          }
+        }),
+      );
 
-      const excludeIds = Array.from(new Set([...historyIds, ...allViewedIdsSet, ...currentQueueIds]));
+      const excludeIds = Array.from(
+        new Set([...historyIds, ...allViewedIdsSet, ...currentQueueIds]),
+      );
       const excludeString = excludeIds.join(',').substring(0, 4000);
 
       const response = await firstValueFrom(
-        this.httpService.get(`${this.recommendServiceUrl}/api/recommend-reels/${userId}`, {
-          headers: { 'x-internal-key': this.internalSharedSecret },
-          params: {
-            k: 100,
-            window_days: 30,
-            strategy: 'multi_source',
-            exclude_ids: excludeString,
+        this.httpService.get(
+          `${this.recommendServiceUrl}/api/recommend-reels/${userId}`,
+          {
+            headers: { 'x-internal-key': this.internalSharedSecret },
+            params: {
+              k: 100,
+              window_days: 30,
+              strategy: 'multi_source',
+              exclude_ids: excludeString,
+            },
           },
-        }),
+        ),
       );
 
       const candidates = response.data.candidates || [];
       const newIds = candidates
         .map((r: any) => r.reel_id.toString())
-        .filter(id => !currentQueueIds.has(id));
+        .filter((id) => !currentQueueIds.has(id));
 
       if (newIds.length > 0) {
         await redis.sadd(historyKey, ...newIds);
@@ -674,13 +747,17 @@ export class RecommendService {
           seen: allViewedIdsSet.has(id),
         }));
 
-        await redis.pipeline()
+        await redis
+          .pipeline()
           .rpush(queueKey, ...newEntries.map((q) => JSON.stringify(q)))
           .expire(queueKey, TTL)
           .exec();
       }
     } catch (error) {
-      console.error('[prefetchRecommendedReels] Error prefetching recommendations:', error.message);
+      console.error(
+        '[prefetchRecommendedReels] Error prefetching recommendations:',
+        error.message,
+      );
     } finally {
       this.isPrefetchingReels.delete(userId);
     }
@@ -714,7 +791,8 @@ export class RecommendService {
     });
 
     if (modified) {
-      await redis.pipeline()
+      await redis
+        .pipeline()
         .del(queueKey)
         .rpush(queueKey, ...updatedQueue)
         .expire(queueKey, TTL)
