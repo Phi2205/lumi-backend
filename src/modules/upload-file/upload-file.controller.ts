@@ -7,6 +7,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UploadFileService } from './upload-file.service';
@@ -18,6 +19,11 @@ export class UploadFileController {
   constructor(private readonly uploadFileService: UploadFileService) {}
 
   @Post()
+  @Throttle({
+    short: { limit: 2, ttl: 1000 },
+    medium: { limit: 5, ttl: 10000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   @UseInterceptors(
     FilesInterceptor('files', 10, {
       storage: memoryStorage(),
@@ -35,6 +41,11 @@ export class UploadFileController {
   }
 
   @Post('signature')
+  @Throttle({
+    short: { limit: 3, ttl: 1000 },
+    medium: { limit: 10, ttl: 10000 },
+    long: { limit: 30, ttl: 60000 },
+  })
   async getSignature(@Body() getSignatureDto: GetSignatureDto) {
     const result = await this.uploadFileService.getUploadSignature(
       getSignatureDto.params,

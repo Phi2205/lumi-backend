@@ -1,8 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('health')
 @Controller('health')
+@SkipThrottle()
 export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Check API health status' })
