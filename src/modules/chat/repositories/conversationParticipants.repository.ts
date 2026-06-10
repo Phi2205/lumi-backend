@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class ConversationParticipantsRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Lấy danh sách conversations của user với phân trang
@@ -187,8 +187,15 @@ export class ConversationParticipantsRepository {
                     },
                     users: {
                       OR: [
-                        { name: { contains: searchQuery, mode: 'insensitive' } },
-                        { username: { contains: searchQuery, mode: 'insensitive' } },
+                        {
+                          name: { contains: searchQuery, mode: 'insensitive' },
+                        },
+                        {
+                          username: {
+                            contains: searchQuery,
+                            mode: 'insensitive',
+                          },
+                        },
                       ],
                     },
                   },
@@ -242,8 +249,15 @@ export class ConversationParticipantsRepository {
                     },
                     users: {
                       OR: [
-                        { name: { contains: searchQuery, mode: 'insensitive' } },
-                        { username: { contains: searchQuery, mode: 'insensitive' } },
+                        {
+                          name: { contains: searchQuery, mode: 'insensitive' },
+                        },
+                        {
+                          username: {
+                            contains: searchQuery,
+                            mode: 'insensitive',
+                          },
+                        },
                       ],
                     },
                   },

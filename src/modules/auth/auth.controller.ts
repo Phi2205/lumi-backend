@@ -7,6 +7,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { StoriesService } from '../stories/stories.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -33,7 +34,7 @@ export class AuthController {
   constructor(
     private auth: AuthService,
     private readonly storiesService: StoriesService,
-  ) { }
+  ) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterDto })
@@ -58,6 +59,11 @@ export class AuthController {
     description: 'Conflict - Email is already registered',
   })
   @Post('register')
+  @Throttle({
+    short: { limit: 2, ttl: 1000 },
+    medium: { limit: 5, ttl: 10000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async register(@Body() dto: RegisterDto) {
     const result = await this.auth.register(dto);
     return result;
@@ -90,6 +96,11 @@ export class AuthController {
     description: 'Unauthorized - Invalid credentials',
   })
   @Post('login')
+  @Throttle({
+    short: { limit: 2, ttl: 1000 },
+    medium: { limit: 5, ttl: 10000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -205,6 +216,11 @@ export class AuthController {
     description: 'Conflict - Email is already registered',
   })
   @Post('verify-otp')
+  @Throttle({
+    short: { limit: 2, ttl: 1000 },
+    medium: { limit: 5, ttl: 10000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async verifyOTP(
     @Body() dto: VerifyOtpDto,
     @Res({ passthrough: true }) res: Response,
@@ -258,6 +274,11 @@ export class AuthController {
     description: 'Bad request - No pending registration found',
   })
   @Post('resend-otp')
+  @Throttle({
+    short: { limit: 1, ttl: 1000 },
+    medium: { limit: 3, ttl: 10000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   async resendOTP(@Body() dto: ResendOtpDto) {
     return this.auth.resendOTP(dto);
   }
@@ -277,6 +298,11 @@ export class AuthController {
   @ApiBody({ type: ForgotPasswordDto })
   @ApiResponse({ status: 200, description: 'OTP sent successfully' })
   @Post('forgot-password')
+  @Throttle({
+    short: { limit: 1, ttl: 1000 },
+    medium: { limit: 3, ttl: 10000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.auth.forgotPassword(dto);
   }
@@ -285,6 +311,11 @@ export class AuthController {
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @Post('reset-password')
+  @Throttle({
+    short: { limit: 2, ttl: 1000 },
+    medium: { limit: 5, ttl: 10000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
   }

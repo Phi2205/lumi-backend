@@ -39,4 +39,4 @@ import { StoriesModule } from '../stories/stories.module';
   ],
   exports: [RealtimeService, PresenceService, SocketGateway],
 })
-export class RealtimeModule { }
+export class RealtimeModule {}

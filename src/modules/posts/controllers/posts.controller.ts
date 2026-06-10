@@ -47,7 +47,7 @@ export class PostsController {
     private recommendService: RecommendService,
     @Inject(forwardRef(() => SocketGateway))
     private readonly socketGateway: SocketGateway,
-  ) { }
+  ) {}
 
   @ApiOperation({ summary: 'Create a new post (supports multiple media)' })
   @ApiResponse({ status: 201, description: 'Post created' })
@@ -139,7 +139,10 @@ export class PostsController {
                 },
               })
               .catch((err) =>
-                console.error('Failed to log like_post event to CF:', err.message),
+                console.error(
+                  'Failed to log like_post event to CF:',
+                  err.message,
+                ),
               );
           }
         }
@@ -184,14 +187,18 @@ export class PostsController {
     const result = await this.postViewService.markAsSeen(postIds, userId);
 
     // Đồng bộ tức thì với queue recommend trong Redis
-    this.recommendService.syncSeenStatusInQueue(userId, postIds).catch((err) =>
-      console.error('Failed to sync seen status in queue:', err.message),
-    );
+    this.recommendService
+      .syncSeenStatusInQueue(userId, postIds)
+      .catch((err) =>
+        console.error('Failed to sync seen status in queue:', err.message),
+      );
 
     // ─── Log event view_post cho từng post để gửi sang hệ thống CF ───
     try {
       const posts = await this.postService.getPostsByIds(postIds);
-      const postsMap = new Map(posts.map((p) => [p.id.toString(), p.user_id.toString()]));
+      const postsMap = new Map(
+        posts.map((p) => [p.id.toString(), p.user_id.toString()]),
+      );
 
       for (const id of postIds) {
         const targetUserId = postsMap.get(id);
@@ -208,7 +215,10 @@ export class PostsController {
               },
             })
             .catch((err) =>
-              console.error(`Failed to log view_post event for ${id} to CF:`, err.message),
+              console.error(
+                `Failed to log view_post event for ${id} to CF:`,
+                err.message,
+              ),
             );
         }
       }
@@ -368,7 +378,10 @@ export class PostsController {
               },
             })
             .catch((err) =>
-              console.error('Failed to log comment_post event to CF:', err.message),
+              console.error(
+                'Failed to log comment_post event to CF:',
+                err.message,
+              ),
             );
         }
         console.log('Commented on post:', postId);
@@ -379,7 +392,6 @@ export class PostsController {
 
     return result;
   }
-
 
   // ─── Share ───────────────────────────────────────────────────────────────────
 

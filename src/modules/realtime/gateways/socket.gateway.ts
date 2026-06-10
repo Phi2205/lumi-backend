@@ -28,7 +28,8 @@ import { StoriesService } from '../../stories/stories.service';
   },
 })
 export class SocketGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -47,7 +48,7 @@ export class SocketGateway
     private readonly storiesService: StoriesService,
     @Inject(forwardRef(() => PostCommentService))
     private readonly postCommentService: PostCommentService,
-  ) { }
+  ) {}
 
   /**
    * Cấu hình socket server sau khi khởi tạo
@@ -254,7 +255,10 @@ export class SocketGateway
               },
             })
             .catch((err) =>
-              this.logger.error('Failed to log message event to CF:', err.message),
+              this.logger.error(
+                'Failed to log message event to CF:',
+                err.message,
+              ),
             );
         }
       }
@@ -467,6 +471,7 @@ export class SocketGateway
    * Các hàm helper để broadcast từ Service
    */
   broadcastComment(postId: string, comment: any) {
+    console.log('Broadcasting new comment:', comment);
     this.server.to(`post:${postId}`).emit('new_comment', comment);
   }
 

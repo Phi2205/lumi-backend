@@ -12,13 +12,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     // --- LOG KIỂM TRA ---
     if (rawRedisUrl) {
       console.log('--- DEBUG REDIS ---');
-      console.log('Raw URL Value:', JSON.stringify(rawRedisUrl)); 
+      console.log('Raw URL Value:', JSON.stringify(rawRedisUrl));
       console.log('Length:', rawRedisUrl.length);
       console.log('--- END DEBUG ---');
     }
 
     // Tự động gỡ ngoặc kép nếu có để app chạy được luôn
-    const redisUrl = rawRedisUrl ? rawRedisUrl.replace(/["']/g, '').trim() : null;
+    const redisUrl = rawRedisUrl
+      ? rawRedisUrl.replace(/["']/g, '').trim()
+      : null;
     const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
 
     // ✅ Ưu tiên Upstash nếu có REDIS_URL
@@ -42,10 +44,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.client.on('connect', () => {
-      console.log(
-        'Redis Connected:',
-        redisUrl ? 'UPSTASH' : 'LOCAL',
-      );
+      console.log('Redis Connected:', redisUrl ? 'UPSTASH' : 'LOCAL');
     });
   }
 

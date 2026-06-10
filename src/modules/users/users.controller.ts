@@ -36,7 +36,7 @@ export class UsersController {
     private readonly recommendService: RecommendService,
     private readonly redisService: RedisService,
     private readonly storiesService: StoriesService,
-  ) { }
+  ) {}
 
   // GET /users?name=abc&page=1&limit=20
   @Get()

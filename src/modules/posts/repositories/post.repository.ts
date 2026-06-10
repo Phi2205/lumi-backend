@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PostRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Tạo post (hỗ trợ tạo nhiều media thông qua relation post_media)
@@ -24,14 +24,14 @@ export class PostRepository {
         content: data.content ?? null,
         ...(data.media?.length
           ? {
-            post_media: {
-              create: data.media.map((m, idx) => ({
-                media_url: m.media_url,
-                media_type: m.media_type,
-                order: m.order ?? idx,
-              })),
-            },
-          }
+              post_media: {
+                create: data.media.map((m, idx) => ({
+                  media_url: m.media_url,
+                  media_type: m.media_type,
+                  order: m.order ?? idx,
+                })),
+              },
+            }
           : {}),
       },
       include: {

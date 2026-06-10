@@ -11,7 +11,7 @@ export class ConversationService {
     private conversationParticipantsRepository: ConversationParticipantsRepository,
     @Inject(forwardRef(() => PresenceService))
     private presenceService: PresenceService,
-  ) { }
+  ) {}
 
   /**
    * Lấy tất cả conversations mà user tham gia
@@ -459,9 +459,8 @@ export class ConversationService {
       };
     }
 
-    const conversation = await this.conversationRepository.findById(
-      conversationId,
-    );
+    const conversation =
+      await this.conversationRepository.findById(conversationId);
 
     if (!conversation) {
       return {
@@ -530,9 +529,8 @@ export class ConversationService {
    * Kiểm tra người dùng hiện tại có phải là trưởng nhóm hay không
    */
   async checkGroupOwner(conversationId: string, userId: string) {
-    const conversation = await this.conversationRepository.findById(
-      conversationId,
-    );
+    const conversation =
+      await this.conversationRepository.findById(conversationId);
 
     if (!conversation) {
       return {
@@ -578,9 +576,8 @@ export class ConversationService {
       };
     }
 
-    const conversation = await this.conversationRepository.findById(
-      conversationId,
-    );
+    const conversation =
+      await this.conversationRepository.findById(conversationId);
 
     if (!conversation) {
       return {
