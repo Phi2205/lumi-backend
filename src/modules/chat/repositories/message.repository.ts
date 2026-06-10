@@ -3,7 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class MessageRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Tạo tin nhắn mới
@@ -23,11 +23,11 @@ export class MessageRepository {
         type: (data.type as any) || 'text',
         message_attachments: data.attachments?.length
           ? {
-            create: data.attachments.map((att) => ({
-              url: att.url,
-              file_type: att.type,
-            })),
-          }
+              create: data.attachments.map((att) => ({
+                url: att.url,
+                file_type: att.type,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -71,9 +71,9 @@ export class MessageRepository {
       take: limit,
       ...(cursor
         ? {
-          cursor: { id: BigInt(cursor) },
-          skip: 1,
-        }
+            cursor: { id: BigInt(cursor) },
+            skip: 1,
+          }
         : {}),
     });
   }
@@ -119,11 +119,11 @@ export class MessageRepository {
               (attachments?.length ? attachments[0].type : 'text'),
             message_attachments: attachments?.length
               ? {
-                create: attachments.map((att) => ({
-                  url: att.url,
-                  file_type: att.type,
-                })),
-              }
+                  create: attachments.map((att) => ({
+                    url: att.url,
+                    file_type: att.type,
+                  })),
+                }
               : undefined,
           },
           include: {

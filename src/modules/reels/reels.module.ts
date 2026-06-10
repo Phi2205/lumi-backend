@@ -42,4 +42,4 @@ import { RedisModule } from 'src/redis/redis.module';
     ReelViewRepository,
   ],
 })
-export class ReelsModule { }
+export class ReelsModule {}

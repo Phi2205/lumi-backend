@@ -29,7 +29,7 @@ import { CreateStoryDto } from './dto/create-story.dto';
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth('JWT-auth')
 export class StoriesController {
-  constructor(private storiesService: StoriesService) { }
+  constructor(private storiesService: StoriesService) {}
 
   @ApiOperation({ summary: 'Create a new story' })
   @ApiConsumes('multipart/form-data')
@@ -235,7 +235,9 @@ export class StoriesController {
     );
   }
 
-  @ApiOperation({ summary: 'Get a flat feed of stories from friends (B1 -> B2)' })
+  @ApiOperation({
+    summary: 'Get a flat feed of stories from friends (B1 -> B2)',
+  })
   @ApiResponse({ status: 200, description: 'List of friend stories' })
   @Get('friend-feed')
   async getFriendStoriesFeed(
@@ -243,6 +245,10 @@ export class StoriesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.storiesService.getFriendStoriesFeed(req.user.userId, page, limit);
+    return this.storiesService.getFriendStoriesFeed(
+      req.user.userId,
+      page,
+      limit,
+    );
   }
 }

@@ -24,7 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private redisService: RedisService,
     private emailService: EmailService,
-  ) { }
+  ) {}
 
   // Tạo username từ name và đảm bảo unique
   private async generateUniqueUsername(name: string): Promise<string> {

@@ -25,4 +25,4 @@ import { RedisModule } from 'src/redis/redis.module';
   ],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

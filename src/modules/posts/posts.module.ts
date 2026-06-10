@@ -46,4 +46,4 @@ import { PostViewService } from './services/post-view.service';
     PostViewService,
   ],
 })
-export class PostsModule { }
+export class PostsModule {}

@@ -9,7 +9,7 @@ export class PresenceService {
   private readonly LAST_ONLINE_PREFIX = 'presence:last_online:';
   private readonly HEARTBEAT_TTL = 60; // 60 giây TTL theo yêu cầu
 
-  constructor(private readonly redisService: RedisService) { }
+  constructor(private readonly redisService: RedisService) {}
 
   /**
    * Đánh dấu người dùng là online

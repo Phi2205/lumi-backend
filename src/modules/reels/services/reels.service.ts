@@ -8,7 +8,7 @@ export class ReelsService {
   constructor(
     private readonly reelsRepository: ReelsRepository,
     private readonly reelLikeRepository: ReelLikeRepository,
-  ) { }
+  ) {}
 
   async createReel(
     userId: string,
@@ -139,7 +139,10 @@ export class ReelsService {
     }
 
     const hasLiked = requestingUserId
-      ? await this.reelLikeRepository.checkLike(reel.id, BigInt(requestingUserId))
+      ? await this.reelLikeRepository.checkLike(
+          reel.id,
+          BigInt(requestingUserId),
+        )
       : false;
 
     const cloudName =

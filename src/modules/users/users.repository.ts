@@ -3,16 +3,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class UsersRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByName(name: string | undefined, skip: number, take: number) {
     const where = name
       ? {
-        name: {
-          contains: name,
-          mode: 'insensitive' as const,
-        },
-      }
+          name: {
+            contains: name,
+            mode: 'insensitive' as const,
+          },
+        }
       : undefined;
 
     const [data, total] = await Promise.all([
@@ -105,13 +105,13 @@ export class UsersRepository {
         ...userData,
         ...(user_location
           ? {
-            user_location: {
-              upsert: {
-                create: user_location,
-                update: user_location,
+              user_location: {
+                upsert: {
+                  create: user_location,
+                  update: user_location,
+                },
               },
-            },
-          }
+            }
           : {}),
       },
       select: {

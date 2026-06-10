@@ -21,7 +21,7 @@ export class StoriesService {
     @Inject(forwardRef(() => PresenceService))
     private presence: PresenceService,
     private friends: FriendsService,
-  ) { }
+  ) {}
 
   /**
    * 🔍 KIỂM TRA USER CÓ STORY ACTIVE KHÔNG
@@ -142,14 +142,21 @@ export class StoriesService {
       // Gửi event qua socket cho từng người bạn đang online
       onlineFriendIds.forEach((id) => {
         // Gửi tới room riêng của user (user_<id> hoặc <id>)
-        console.log(`Notifying story update for user ${userId} to friend ${id}`);
+        console.log(
+          `Notifying story update for user ${userId} to friend ${id}`,
+        );
         this.realtime.emitToUser(`user_${id}`, 'story_status_changed', payload);
         // this.realtime.emitToUser(id, 'story_status_changed', payload);
       });
 
-      this.logger.log(`Notified story update for user ${userId} to ${onlineFriendIds.length} online friends (out of ${friendIds.length} total)`);
+      this.logger.log(
+        `Notified story update for user ${userId} to ${onlineFriendIds.length} online friends (out of ${friendIds.length} total)`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to notify story update for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to notify story update for user ${userId}:`,
+        error,
+      );
     }
   }
 
@@ -518,11 +525,11 @@ export class StoriesService {
       take: limit + 1,
       cursor: cursor
         ? {
-          story_id_user_id: {
-            story_id: BigInt(storyId),
-            user_id: BigInt(cursor),
-          },
-        }
+            story_id_user_id: {
+              story_id: BigInt(storyId),
+              user_id: BigInt(cursor),
+            },
+          }
         : undefined,
       orderBy: {
         viewed_at: 'desc',

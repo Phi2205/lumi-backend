@@ -13,7 +13,7 @@ import { FriendsService } from './friends.service';
 @Controller('friends')
 @UseGuards(AuthGuard('jwt'))
 export class FriendsController {
-  constructor(private friendsService: FriendsService) { }
+  constructor(private friendsService: FriendsService) {}
 
   /**
    * Lấy danh sách bạn bè
