@@ -1,5 +1,6 @@
 import './env-loader'; // Must be first!
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -12,7 +13,9 @@ async function bootstrap() {
     return this.toString();
   };
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.set('trust proxy', 1);
 
   // Enable cookie parser
   app.use(cookieParser());

@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
@@ -30,6 +31,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.1.13",
     "@nestjs/swagger": "^11.2.5",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.14",
     "@prisma/client": "^4.16.0",
     "@sendgrid/mail": "^8.1.6",
@@ -42,7 +44,7 @@
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
-    "ioredis": "^5.9.1",
+    "ioredis": "^5.11.1",
     "lodash": "^4.17.21",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
